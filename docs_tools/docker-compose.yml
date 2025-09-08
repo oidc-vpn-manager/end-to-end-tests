@@ -1,0 +1,142 @@
+# This file is designed to run with just a sqlite database
+# and is purely for "smoke testing"
+volumes:
+  pki_volume:
+  sqlite:
+
+services:
+  sqlite-volume-permissions:
+    image: busybox:latest
+    volumes:
+      - sqlite:/data
+    command: "sh -x -e -E -c 'mkdir -p /data/sqlite && chmod 777 /data/sqlite && chown -R 1001:1001 /data/sqlite'"
+
+  certtransparency-migrate:
+    image: ghcr.io/openvpn-manager/certtransparency:latest
+    build:
+      context: ../services/certtransparency
+    env_file:
+      - .env.certtransparency
+    volumes:
+      - sqlite:/data
+      - ./pki:/app/pki:ro
+    environment:
+      - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - INTERMEDIATE_CA_PRIVATE_KEY_FILE=/app/pki/intermediate-ca.key
+    command: ./run_migrate.sh
+    depends_on:
+      sqlite-volume-permissions:
+        condition: service_completed_successfully
+
+  certtransparency:
+    image: ghcr.io/openvpn-manager/certtransparency:latest
+    build:
+      context: ../services/certtransparency
+    env_file:
+      - .env.certtransparency
+    restart: "no"
+    ports:
+      - "8800:8800"
+    volumes:
+      - sqlite:/data
+      - ./pki:/app/pki:ro
+    environment:
+      - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - INTERMEDIATE_CA_PRIVATE_KEY_FILE=/app/pki/intermediate-ca.key
+    depends_on:
+      certtransparency-migrate:
+        condition: service_completed_successfully
+
+  frontend-migrate:
+    image: ghcr.io/openvpn-manager/frontend:latest
+    build:
+      context: ../services/frontend
+    env_file:
+      - .env.frontend
+    volumes:
+      - sqlite:/data
+      - ./openvpn_templates:/app/openvpn_templates:ro
+      - ./server_templates:/app/server_templates:ro
+      - ./openvpn_options.yaml:/app/openvpn_options.yaml:ro
+      - ./pki:/app/pki:ro
+    environment:
+      - OVPN_TEMPLATE_PATH=/app/openvpn_templates
+      - SERVER_TEMPLATES_DIR=/app/server_templates
+      - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
+      - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
+      - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+    command: ./run_migrate.sh
+    depends_on:
+      sqlite-volume-permissions:
+        condition: service_completed_successfully
+
+  frontend:
+    image: ghcr.io/openvpn-manager/frontend:latest
+    build:
+      context: ../services/frontend
+    env_file:
+      - .env.frontend
+    restart: "no"
+    ports:
+      - "80:8600"
+    volumes:
+      - sqlite:/data
+      - ./openvpn_templates:/app/openvpn_templates:ro
+      - ./server_templates:/app/server_templates:ro
+      - ./openvpn_options.yaml:/app/openvpn_options.yaml:ro
+      - ./pki:/app/pki:ro
+    environment:
+      - OVPN_TEMPLATE_PATH=/app/openvpn_templates
+      - SERVER_TEMPLATES_DIR=/app/server_templates
+      - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
+      - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
+      - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+    depends_on:
+      frontend-migrate:
+        condition: service_completed_successfully
+
+  signing-init:
+    image: ghcr.io/openvpn-manager/signing:latest
+    build:
+      context: ../services/signing
+    command: ./import_pki.sh
+    user: root
+    volumes:
+      - ./pki:/pki_source:ro
+      - pki_volume:/pki_target
+    environment:
+      SOURCE_CERT_PATH: /pki_source/intermediate-ca.crt
+      SOURCE_KEY_PATH: /pki_source/intermediate-ca.key
+      TARGET_CERT_PATH: /pki_target/intermediate-ca.crt
+      TARGET_KEY_PATH: /pki_target/intermediate-ca.key
+      TARGET_UID: 1001
+      TARGET_GID: 1001
+
+  signing:
+    image: ghcr.io/openvpn-manager/signing:latest
+    build:
+      context: ../services/signing
+    env_file:
+      - .env.signing
+    restart: "no"
+    expose:
+      - 8500
+    volumes:
+      - pki_volume:/pki:ro
+    depends_on:
+      signing-init:
+        condition: service_completed_successfully
+
+
+  tiny-oidc:
+    build:
+      context: ../tests/tiny-oidc
+      dockerfile: Dockerfile
+      # dockerfile: Dockerfile.debug
+      network: host
+
+    image: localhost/tinyoidc:latest
+
+    # Host the application on port 8000
+    ports:
+      - "8000:8000"

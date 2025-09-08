@@ -1,0 +1,28 @@
+use_tcp:
+  display_name: 'Use TCP Protocol'
+  description: 'Use TCP instead of UDP for better reliability in restricted networks'
+  settings:
+    protocol: 'tcp-client'
+    use_tcp: true
+
+custom_port:
+  display_name: 'Custom Port (443)'
+  description: 'Use port 443 to bypass firewalls that block standard OpenVPN ports'
+  settings:
+    custom_port: 443
+    server_port: 443
+
+enable_compression:
+  display_name: 'Enable LZ4 Compression'
+  description: 'Enable modern LZ4 compression for better performance'
+  settings:
+    enable_compression: true
+
+mobile_optimized:
+  display_name: 'Mobile Optimized'
+  description: 'Optimized settings for mobile devices and unstable connections'
+  settings:
+    use_tcp: true
+    custom_port: 443
+    enable_compression: true
+    mobile_settings: true

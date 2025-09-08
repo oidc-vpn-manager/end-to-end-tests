@@ -1,0 +1,6 @@
+records=docs/decision-records
+templateDir=docs/decision-records/.template
+language=en
+template=template
+fileType=md
+defaultProposed=false
