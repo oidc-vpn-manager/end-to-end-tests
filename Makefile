@@ -49,8 +49,50 @@ rebuild_docker_images:
 	@echo "✅ Clean rebuild complete"
 
 push_docker_images: rebuild_docker_images
-	@echo "➡️ Pushing images to the container registry..."
-	@bash -x -c 'images=$$(docker compose -f tests/docker-compose.yml config | grep "image:" | awk "{print \$$2}" | sort -u | grep "openvpn-manager" | tr "\n" " ") ; for image in $$images ; do echo "Processing $$image" ; docker tag $$image $$(echo $$image | cut -d: -f1):$$(date +%Y%m%d-%H%M%S) ; docker push $$(echo $$image | cut -d: -f1):$$(date +%Y%m%d-%H%M%S) ; docker push $$image ; done'
+	@echo "📦 Tagging and pushing all repos"
+	@bash -x -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
+		export datestamp=$$(date +"%Y%m%d") ; \
+		echo "🔍 Processing openvpn-manager images with contexts..." ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"openvpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		for service in $$services ; \
+		do \
+			export image="$$(echo $$service | cut -d"|" -f1)" ; \
+			export context="$$(echo $$service | cut -d"|" -f2)" ; \
+			export reponame="$$(echo $$image | cut -d: -f1)" ; \
+			echo "" ; \
+			echo "📁 Processing: $$image (context: $$context)" ; \
+			\
+			pushd "$$context" >/dev/null || continue ; \
+			if git tag --points-at HEAD | grep -q . ; then \
+				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
+				echo "✅ Using existing tag: $$semver" ; \
+			else \
+				semver_bump "$$context" ; \
+				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
+				echo "✅ Using new tag: $$semver" ; \
+			fi ; \
+			popd >/dev/null ; \
+			\
+			export major="$$(echo $$semver | cut -d. -f1)" ; \
+			export minor="$$(echo $$semver | cut -d. -f2)" ; \
+			echo "🐳 Tagging $$image -> $$reponame:$$timestamp, $$reponame:$$semver" ; \
+			docker tag "$$image" "$$reponame:$$timestamp" ; \
+			docker tag "$$image" "$$reponame:$$semver" ; \
+			docker tag "$$image" "$$reponame:$${major}.$${minor}" ; \
+			docker tag "$$image" "$$reponame:$${major}" ; \
+			echo "📤 Pushing $$reponame:$$timestamp, $$reponame:$$semver, $$image" ; \
+			docker push "$$reponame:$$timestamp" ; \
+			docker push "$$reponame:$$semver" ; \
+			docker push "$$reponame:$${major}.$${minor}" ; \
+			docker push "$$reponame:$${major}" ; \
+			docker push "$$image" ; \
+		done ; \
+		echo "" ; \
+		echo "✅ Finished processing all images" \
+	'
 	@echo "✅ Pushed"
 
 rebuild_docker_and_push: rebuild_docker push_docker_images
