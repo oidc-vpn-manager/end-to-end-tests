@@ -15,11 +15,11 @@ fetch:
 	@git submodule foreach bash -c "git checkout main && git pull"
 	@echo "✅ Done"
 
-test: test_setup test_certtransparency test_frontend test_signing test_get_openvpn_config test_pki_tool start_docker check_services_ready test_browser get_docker_logs
+test: test_setup test_certtransparency test_frontend test_signing test_get_openvpn_config test_pki_tool rebuild_docker check_services_ready test_browser
 
-test_after_docker: test_setup test_certtransparency test_frontend test_signing test_get_openvpn_config test_pki_tool check_services_ready test_browser get_docker_logs
+test_after_docker: test_setup test_certtransparency test_frontend test_signing test_get_openvpn_config test_pki_tool check_services_ready test_browser
 
-just_test_e2e: start_docker check_services_ready test_browser get_docker_logs
+just_test_e2e: rebuild_docker check_services_ready test_browser
 
 just_test_without_e2e: test_setup test_certtransparency test_frontend test_signing test_get_openvpn_config test_pki_tool
 
@@ -104,32 +104,39 @@ check_services_ready:
 # The following tests are all unit, functional and integration tests local to the services or tools themselves
 test_certtransparency:
 	@echo "📋 Checking certtransparency service"
-	@bash -c "cd services/certtransparency && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/certtransparency.$(timestamp).log
+	@rm -f suite_test_results/certtransparency.log
+	@bash -c "cd services/certtransparency && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/certtransparency.log | tee suite_test_results/certtransparency.$(timestamp).log
 
 test_frontend:
 	@echo "📋 Checking frontend service"
-	@bash -c "cd services/frontend         && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/frontend.$(timestamp).log
+	@rm -f suite_test_results/frontend.log
+	@bash -c "cd services/frontend         && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/frontend.log | tee suite_test_results/frontend.$(timestamp).log
 
 test_signing:
 	@echo "📋 Checking signing service"
-	@bash -c "cd services/signing          && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/signing.$(timestamp).log
+	@rm -f suite_test_results/signing.log
+	@bash -c "cd services/signing          && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/signing.log | tee suite_test_results/signing.$(timestamp).log
 
 
 test_get_openvpn_config:
 	@echo "📋 Checking get_openvpn_config tool"
-	@bash -c "cd tools/get_openvpn_config  && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/get_config.$(timestamp).log
+	@rm -f suite_test_results/get_config.log
+	@bash -c "cd tools/get_openvpn_config  && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/get_config.log | tee suite_test_results/get_config.$(timestamp).log
 
 test_pki_tool:
 	@echo "📋 Checking pki_tool"
-	@bash -c "cd tools/pki_tool            && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/generate_pki.$(timestamp).log
+	@rm -f suite_test_results/generate_pki.log
+	@bash -c "cd tools/pki_tool            && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/generate_pki.log | tee suite_test_results/generate_pki.$(timestamp).log
 
 test_browser:
 	@echo "📋 Running end-to-end tests with Playwright"
-	@bash -c "cd tests                     && pytest end-to-end/ -v --browser chromium" 2>&1 | ts | tee suite_test_results/e2e_tests.$(timestamp).log
+	@rm -f suite_test_results/e2e_tests.log
+	@bash -c "cd tests                     && pytest end-to-end/ -v --browser chromium" 2>&1 | ts | tee suite_test_results/e2e_tests.log | tee suite_test_results/e2e_tests.$(timestamp).log
 
 get_docker_logs:
 	@echo "🔍 Pulling docker logs, excluding /health lines"
-	@bash -c "cd tests                     && docker compose logs | grep -v '/health'" 2>&1 | tee suite_test_results/docker.$(timestamp).log
+	@rm -f suite_test_results/docker.log
+	@bash -c "cd tests                     && docker compose logs | grep -v '/health'" 2>&1 | tee suite_test_results/docker.log | tee suite_test_results/docker.$(timestamp).log
 
 createmigrations: ## Create database migrations for all services
 	@echo "🔄 Creating database migrations for all services"

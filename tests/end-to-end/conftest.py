@@ -7,6 +7,7 @@ import requests
 import os
 import subprocess
 import time
+import fcntl
 from http.cookies import SimpleCookie
 from playwright.sync_api import Playwright, Browser, BrowserContext, Page
 
@@ -266,9 +267,12 @@ def cli_browser_integration(page: Page):
             Returns (process_result, captured_url)
             """
             captured_url = None
-            
-            # If this is a get-oidc-profile command, add --output-auth-url stderr for reliable URL capture
-            if 'get-oidc-profile' in command and '--output-auth-url' not in command:
+
+            # Always setup mock xdg-open to prevent browser popups
+            self.setup_mock_xdg_open()
+
+            # If this is a profile command with OIDC authentication, add --output-auth-url stderr for reliable URL capture
+            if ('get-oidc-profile' in command or 'get_openvpn_profile.py' in command) and '--output-auth-url' not in command:
                 command = command + ' --output-auth-url stderr'
             
             # Run the CLI command
@@ -295,7 +299,66 @@ def cli_browser_integration(page: Page):
                         captured_url = f.read().strip()
                         
             return process, captured_url
-            
+
+        def start_cli_command_background(self, command):
+            """
+            Start a CLI command in background and return process handle and captured auth URL
+            Returns (process_handle, captured_url)
+            """
+            captured_url = None
+
+            # Always setup mock xdg-open to prevent browser popups
+            self.setup_mock_xdg_open()
+
+            # If this is a profile command with OIDC authentication, add --output-auth-url stderr for reliable URL capture
+            if ('get-oidc-profile' in command or 'get_openvpn_profile.py' in command) and '--output-auth-url' not in command:
+                command = command + ' --output-auth-url stderr'
+
+            # Start the CLI command in background
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Give the CLI a moment to start and output the auth URL
+            import time
+            time.sleep(2)
+
+            # Check if we can read stderr data (the auth URL should be output quickly)
+            try:
+                # Use poll to check if process has terminated early
+                if process.poll() is None:
+                    # Process still running, try to read stderr for auth URL
+                    stderr_so_far = ""
+                    import select
+                    import os
+
+                    # Make stderr non-blocking
+                    fd = process.stderr.fileno()
+                    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+                    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+                    try:
+                        stderr_data = process.stderr.read()
+                        if stderr_data:
+                            stderr_so_far = stderr_data
+                    except BlockingIOError:
+                        pass  # No data available yet
+
+                    # Parse auth URL from stderr
+                    for line in stderr_so_far.split('\n'):
+                        if line.startswith('AUTH_URL: '):
+                            captured_url = line.replace('AUTH_URL: ', '').strip()
+                            break
+
+            except Exception as e:
+                print(f"Error reading CLI stderr: {e}")
+
+            return process, captured_url
+
         def navigate_to_captured_url(self, captured_url, wait_for_load=True):
             """Navigate Playwright page to captured URL"""
             if captured_url:

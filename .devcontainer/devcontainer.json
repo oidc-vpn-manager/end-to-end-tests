@@ -10,16 +10,29 @@
 		"ghcr.io/devcontainers/features/python:1": {},
 		"ghcr.io/devcontainers/features/node:1": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/schlich/devcontainer-features/playwright:0": {}
+		"ghcr.io/schlich/devcontainer-features/playwright:0": {},
+		"ghcr.io/christophermacgown/devcontainer-features/direnv:1": {},
+		"ghcr.io/va-h/devcontainers-features/uv:1": {}
 	},
 
-	"mounts": []
+	"mounts": [
+		{
+			"source": "/home/jonspriggs/.ssh",
+			"target": "/home/jonspriggs/.ssh",
+			"type": "bind"
+		},
+		{
+			"source": "/home/jonspriggs/.config/gh",
+			"target": "/home/vscode/.config/gh",
+			"type": "bind"
+		}
+	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": ""
+	"postCreateCommand": "npm install -g @anthropic-ai/claude-code && uv tool install claude-monitor && find . -name requirements.txt -exec pip install -r '{}' \\; && sudo apt install moreutils -y"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
