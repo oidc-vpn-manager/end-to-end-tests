@@ -111,7 +111,7 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
     """Test server bundle issuing with CLI + PSK authentication"""
     
     # First ensure we have the CLI client available
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found - server bundle CLI testing skipped")
     
@@ -144,7 +144,7 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
         pytest.skip(f"PSK generation failed: {e}")
     
     # Step 2: Use the valid PSK to get server bundle via CLI
-    cli_command = f"python3 {cli_path} get-psk-profile --server-url http://localhost --psk {psk_key} --target-dir /tmp/server-bundle-cli --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --psk {psk_key} --target-dir /tmp/server-bundle-cli --force"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=10)

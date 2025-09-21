@@ -14,7 +14,7 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
     """Test complete server bundle workflow using Playwright to generate PSK"""
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
@@ -71,7 +71,7 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
     print(f"Extracted PSK via Playwright: {psk_key[:8]}...")
     
     # Step 2: Use CLI with the extracted PSK (no hostname needed)
-    cli_command = f"python3 {cli_path} get-psk-profile --server-url http://localhost --psk {psk_key} --target-dir /tmp/playwright-server-bundle --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --psk {psk_key} --target-dir /tmp/playwright-server-bundle --force"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=15)

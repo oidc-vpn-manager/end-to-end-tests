@@ -19,12 +19,12 @@ def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration):
     """Test complete semi-automatic profile issuing with CLI + browser"""
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found - semi-automatic profile testing skipped")
     
     # Step 1: Run CLI command to request user profile using OIDC flow
-    cli_command = f"python3 {cli_path} get-oidc-profile --server-url http://localhost --output /tmp/test-profile.ovpn --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/test-profile.ovpn --force"
     
     try:
         # This should trigger xdg-open with authentication URL
@@ -85,7 +85,7 @@ def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration):
 def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration):
     """Test token-based profile issuing flow"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
@@ -93,7 +93,7 @@ def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration):
     # direct cookie-based authentication - it uses OIDC flow
     # The CLI always opens browser for authentication
     
-    cli_command = f"python3 {cli_path} get-oidc-profile --server-url http://localhost --output /tmp/token-user-profile.ovpn --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/token-user-profile.ovpn --force"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=15)
@@ -175,7 +175,7 @@ def test_profile_download_and_validation(authenticated_page):
         print("⚠ No profile download available - testing profile creation via CLI instead")
         
         # Alternative: Test that we can create a profile via CLI and verify the process works
-        cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+        cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
         if os.path.exists(cli_path):
             # Just verify the CLI tool exists and can be executed (basic functionality test)
             result = subprocess.run([
@@ -183,7 +183,7 @@ def test_profile_download_and_validation(authenticated_page):
             ], capture_output=True, text=True, timeout=5)
             
             assert result.returncode == 0, "CLI tool should be functional"
-            assert "get-oidc-profile" in result.stdout, "CLI should support OIDC profile command"
+            assert "OpenVPN user profile" in result.stdout or "OIDC login" in result.stdout, "CLI should support OIDC profile functionality"
             print("✓ CLI tool validated as functional for profile operations")
 
 
@@ -235,12 +235,12 @@ def test_profile_certificate_transparency_logging(authenticated_page):
 def test_profile_renewal_workflow(cli_browser_integration):
     """Test profile renewal workflow"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
     # Step 1: Request initial profile
-    cli_command = f"python3 {cli_path} get-oidc-profile --server-url http://localhost --output /tmp/renewal-test.ovpn --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/renewal-test.ovpn --force"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=15)
@@ -258,7 +258,7 @@ def test_profile_renewal_workflow(cli_browser_integration):
         # Step 2: Wait a moment then request renewal
         time.sleep(2)
         
-        renewal_command = f"python3 {cli_path} get-oidc-profile --server-url http://localhost --output /tmp/renewal-test-renewed.ovpn --force"
+        renewal_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/renewal-test-renewed.ovpn --force"
         
         renewal_process, renewal_url = cli_browser_integration.run_cli_command(renewal_command, timeout=15)
         
@@ -281,12 +281,12 @@ def test_profile_renewal_workflow(cli_browser_integration):
 def test_cli_error_handling(cli_browser_integration):
     """Test CLI error handling and user feedback"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
     # Test invalid server URL 
-    invalid_command = f"python3 {cli_path} get-oidc-profile --server-url invalid-url --output /tmp/invalid-test.ovpn"
+    invalid_command = f"python3 {cli_path}  --server-url invalid-url --output /tmp/invalid-test.ovpn"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(invalid_command, timeout=5)
@@ -303,7 +303,7 @@ def test_cli_error_handling(cli_browser_integration):
         pass
     
     # Test missing required parameters (--output)
-    incomplete_command = f"python3 {cli_path} get-oidc-profile --server-url http://localhost"
+    incomplete_command = f"python3 {cli_path}  --server-url http://localhost"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(incomplete_command, timeout=5)
@@ -365,7 +365,7 @@ def validate_openvpn_profile(profile_path):
 def test_concurrent_profile_requests(cli_browser_integration):
     """Test handling of concurrent profile requests"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     

@@ -51,10 +51,105 @@ class TestProfileDownloads:
         page.wait_for_load_state("networkidle")
         expect(page.locator("h2")).to_contain_text("Generate VPN Configuration")
         
+        # Add comprehensive diagnostics before attempting download
+        print("=== DIAGNOSTIC: Form Analysis ===")
+
+        # Check if form exists and what elements are present
+        forms = page.locator("form")
+        form_count = forms.count()
+        print(f"Number of forms found: {form_count}")
+
+        if form_count > 0:
+            # Get the first form's HTML for analysis
+            form_html = forms.first.inner_html()
+            print(f"Form HTML: {form_html[:500]}...")
+
+            # Check form action and method
+            form_action = forms.first.get_attribute("action")
+            form_method = forms.first.get_attribute("method")
+            print(f"Form action: '{form_action}', method: '{form_method}'")
+
+        # Check for submit buttons/inputs
+        submit_elements = page.locator("button[type='submit'], input[type='submit'], button:has-text('Generate')")
+        submit_count = submit_elements.count()
+        print(f"Number of submit elements found: {submit_count}")
+
+        if submit_count > 0:
+            for i in range(submit_count):
+                element = submit_elements.nth(i)
+                tag_name = element.evaluate("el => el.tagName")
+                element_type = element.get_attribute("type")
+                element_value = element.get_attribute("value")
+                element_text = element.text_content()
+                print(f"Submit element {i}: {tag_name}, type='{element_type}', value='{element_value}', text='{element_text}'")
+
+        # Check for any CSP violations or console errors
+        console_messages = []
+        def handle_console(msg):
+            console_messages.append(f"{msg.type}: {msg.text}")
+            print(f"CONSOLE {msg.type}: {msg.text}")
+
+        page.on("console", handle_console)
+
+        # Check current page URL and any redirects
+        current_url = page.url
+        print(f"Current URL: {current_url}")
+
+        # Check for CSRF token
+        csrf_inputs = page.locator("input[name='csrf_token']")
+        csrf_count = csrf_inputs.count()
+        print(f"CSRF tokens found: {csrf_count}")
+        if csrf_count > 0:
+            csrf_value = csrf_inputs.first.get_attribute("value")
+            print(f"CSRF token value: {csrf_value[:20]}..." if csrf_value else "No CSRF value")
+
+        print("=== DIAGNOSTIC: Attempting Form Submission ===")
+
         # Set up download handling
-        with page.expect_download() as download_info:
-            # Click the Generate/Submit button (no options selected = default template)
-            page.click("button[type='submit'], input[type='submit'], button:has-text('Generate')")
+        with page.expect_download(timeout=30000) as download_info:
+            # Try to click the submit button with enhanced error handling
+            try:
+                submit_button = page.locator("button[type='submit'], input[type='submit'], button:has-text('Generate')").first
+
+                # Check if the button is visible and enabled before clicking
+                print(f"Submit button visible: {submit_button.is_visible()}")
+                print(f"Submit button enabled: {submit_button.is_enabled()}")
+
+                # Get button's bounding box to ensure it's clickable
+                bbox = submit_button.bounding_box()
+                print(f"Submit button bounding box: {bbox}")
+
+                # Click the button
+                print("Clicking submit button...")
+                submit_button.click()
+                print("Submit button clicked successfully")
+
+            except Exception as e:
+                print(f"Error clicking submit button: {e}")
+                # Take a screenshot for debugging
+                page.screenshot(path=f"/tmp/form_error_{int(time.time())}.png")
+                raise
+
+        print("=== DIAGNOSTIC: After Click ===")
+
+        # Check if URL changed (indicating form submission)
+        new_url = page.url
+        print(f"URL after click: {new_url}")
+        print(f"URL changed: {current_url != new_url}")
+
+        # Check for any new console messages after click
+        print(f"Console messages after click: {len(console_messages)}")
+        for msg in console_messages[-5:]:  # Show last 5 messages
+            print(f"  {msg}")
+
+        # Check page content for any error messages
+        page_text = page.text_content("body")
+        if "error" in page_text.lower() or "exception" in page_text.lower():
+            print("ERROR DETECTED IN PAGE CONTENT:")
+            print(page_text[:1000])  # First 1000 chars
+
+        print("=== DIAGNOSTIC: Download Event ===")
+        print("Waiting for download event...")
         
         download = download_info.value
         

@@ -65,6 +65,7 @@ services:
       - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
     command: ./run_migrate.sh
     depends_on:
       sqlite-volume-permissions:
@@ -91,6 +92,7 @@ services:
       - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -116,6 +118,7 @@ services:
       - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - ADMIN_URL_BASE=http://localhost:8540
       - SITE_NAME=VPN User Service
     depends_on:
@@ -143,6 +146,7 @@ services:
       - OVPN_OPTIONS_PATH=/app/openvpn_options.yaml
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
+      - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - USER_URL_BASE=http://localhost:8450
       - SITE_NAME=VPN Admin Service
     depends_on:

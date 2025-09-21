@@ -19,7 +19,7 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
     """
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
@@ -84,7 +84,7 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
     
     # Step 3: Use CLI tool to generate server bundle
     print("Step 3: Generating server bundle via CLI...")
-    cli_command = f"python3 {cli_path} get-psk-profile --server-url http://localhost --psk {psk_key} --target-dir /tmp/e2e-server-bundle --force"
+    cli_command = f"python3 {cli_path}  --server-url http://localhost --psk {psk_key} --target-dir /tmp/e2e-server-bundle --force"
     
     try:
         process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=15)
@@ -214,7 +214,7 @@ def test_server_bundle_generates_unique_certificates(authenticated_page, cli_bro
     """
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
         pytest.skip("CLI client not found")
     
@@ -282,7 +282,7 @@ def test_server_bundle_generates_unique_certificates(authenticated_page, cli_bro
     # Now test that each can generate a unique server bundle via CLI
     for i, (hostname, psk_key) in enumerate(zip(generated_psks, generated_keys)):
         target_dir = f"/tmp/unique-server-bundle-{i}"
-        cli_command = f"python3 {cli_path} get-psk-profile --server-url http://localhost --psk {psk_key} --target-dir {target_dir} --force"
+        cli_command = f"python3 {cli_path}  --server-url http://localhost --psk {psk_key} --target-dir {target_dir} --force"
         
         try:
             process, captured_url = cli_browser_integration.run_cli_command(cli_command, timeout=15)
