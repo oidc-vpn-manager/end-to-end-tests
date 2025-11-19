@@ -178,57 +178,100 @@ def test_server_bundle_psk_ui_workflow(authenticated_page):
     print(f"✓ PSK UI workflow test completed for {description}")
 
 
-def test_server_bundle_file_validation(authenticated_page):
-    """Test server bundle file structure validation"""
-    
-    # This test focuses on validating any server bundle files that might exist
-    # from other tests or manual creation
-    
-    test_dirs = [
-        "/tmp/server-bundle-cli",
-        "/tmp/playwright-server-bundle", 
-        "/etc/openvpn"  # Default location
-    ]
-    
-    found_files = False
-    
-    for test_dir in test_dirs:
-        if os.path.exists(test_dir):
-            files = []
-            for root, dirs, filenames in os.walk(test_dir):
-                files.extend([(root, f) for f in filenames])
-            
-            if files:
-                found_files = True
-                print(f"Validating server bundle files in {test_dir}:")
-                
-                # Check for expected file types
-                cert_files = [f for root, f in files if f.endswith(('.crt', '.pem'))]
-                key_files = [f for root, f in files if f.endswith('.key')]
-                config_files = [f for root, f in files if f.endswith('.conf')]
-                
-                print(f"  Certificates: {cert_files}")
-                print(f"  Keys: {key_files}")
-                print(f"  Configs: {config_files}")
-                
-                # Basic validation
-                assert len(cert_files) > 0, f"No certificate files found in {test_dir}"
-                assert len(key_files) > 0, f"No key files found in {test_dir}"
-                
-                # Validate file contents are not empty
-                for root, filename in files:
-                    filepath = os.path.join(root, filename)
-                    file_size = os.path.getsize(filepath)
-                    assert file_size > 0, f"File {filename} is empty"
-                    
-                    # Basic content validation for specific file types
-                    if filename.endswith('.crt') or filename.endswith('.pem'):
-                        with open(filepath, 'r') as f:
-                            content = f.read()
-                            assert "-----BEGIN" in content, f"Invalid certificate format in {filename}"
-                    
-                print(f"✓ Server bundle files in {test_dir} are valid")
-                break
-    
-    if not found_files:
-        pytest.fail("No server bundle files found to validate")
+def test_server_bundle_file_validation(authenticated_page, repository_root):
+    """Test server bundle file structure validation by creating and validating a bundle"""
+
+    # This test creates its own server bundle to ensure consistent validation
+    # Step 1: Create a PSK via admin UI
+    admin_page = authenticated_page("admin")
+    import time
+    description = f"File Validation Test {int(time.time())}"
+
+    # Navigate to PSK management page
+    admin_page.goto("http://localhost/admin/psk")
+
+    # Click "New PSK" button
+    new_psk_button = admin_page.locator("a:has-text('New PSK')")
+    expect(new_psk_button).to_be_visible(timeout=10000)
+    new_psk_button.click()
+
+    # Fill out PSK form fields
+    description_field = admin_page.locator("input[name='description']")
+    description_field.fill(description)
+
+    # Select a template set (use the first available option)
+    template_select = admin_page.locator("select[name='template_set']")
+    template_select.select_option(index=0)
+
+    # Submit form
+    submit_button = admin_page.locator("button[type='submit'], input[type='submit']")
+    submit_button.click()
+    admin_page.wait_for_load_state("networkidle")
+
+    # Should be on PSK creation success page
+    expect(admin_page.locator("body")).to_contain_text("Pre-Shared Key Created Successfully", timeout=5000)
+
+    # Extract PSK from the success page
+    page_content = admin_page.locator("body").inner_text()
+    import re
+    psk_match = re.search(r'--psk\s+([a-f0-9\-]{36})', page_content)
+    assert psk_match is not None, "Could not extract PSK from success page content"
+    psk_key = psk_match.group(1)
+
+    print(f"Created PSK for validation: {psk_key[:8]}...")
+
+    # Step 2: Create server bundle using the PSK
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
+    assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
+
+    target_dir = "/tmp/validation-server-bundle"
+    # Clean up any previous test data
+    import shutil
+    if os.path.exists(target_dir):
+        shutil.rmtree(target_dir)
+
+    cli_command = f"python3 {cli_path} --server-url http://localhost --psk {psk_key} --target-dir {target_dir} --force"
+
+    result = subprocess.run(cli_command, shell=True, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, f"Server bundle creation failed: {result.stderr}"
+
+    # Step 3: Validate the created bundle
+    assert os.path.exists(target_dir), "Server bundle directory should exist"
+
+    files = []
+    for root, dirs, filenames in os.walk(target_dir):
+        files.extend([(root, f) for f in filenames])
+
+    assert len(files) > 0, "Server bundle should contain files"
+
+    print(f"Validating server bundle files in {target_dir}:")
+
+    # Check for expected file types
+    cert_files = [f for root, f in files if f.endswith(('.crt', '.pem'))]
+    key_files = [f for root, f in files if f.endswith('.key')]
+    config_files = [f for root, f in files if f.endswith(('.conf', '.ovpn'))]
+
+    print(f"  Certificates: {cert_files}")
+    print(f"  Keys: {key_files}")
+    print(f"  Configs: {config_files}")
+
+    # Basic validation
+    assert len(cert_files) > 0, f"No certificate files found in {target_dir}"
+    assert len(key_files) > 0, f"No key files found in {target_dir}"
+
+    # Validate file contents are not empty
+    for root, filename in files:
+        filepath = os.path.join(root, filename)
+        file_size = os.path.getsize(filepath)
+        assert file_size > 0, f"File {filename} is empty"
+
+        # Basic content validation for specific file types
+        if filename.endswith('.crt') or filename.endswith('.pem'):
+            with open(filepath, 'r') as f:
+                content = f.read()
+                assert "-----BEGIN" in content, f"Invalid certificate format in {filename}"
+
+    print(f"✓ Server bundle files in {target_dir} are valid")
+
+    # Clean up
+    shutil.rmtree(target_dir)
