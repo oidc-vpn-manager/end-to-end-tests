@@ -166,6 +166,104 @@ except Exception as e:
             pytest.fail(f"⚠️ Database connectivity: FAILED - {result.stdout.strip()}")
 
 
+class TestPKICertificatesPresent:
+    """Test that PKI certificates are present and valid in containers"""
+
+    def test_frontend_certificates_mounted(self, tests_dir):
+        """Test that PKI certificates are properly mounted in frontend container"""
+        # Check for root CA certificate
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "frontend", "test", "-f", "/app/pki/root-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Root CA certificate not found in frontend container at /app/pki/root-ca.crt"
+
+        # Check for intermediate CA certificate
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "frontend", "test", "-f", "/app/pki/intermediate-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Intermediate CA certificate not found in frontend container at /app/pki/intermediate-ca.crt"
+
+        # Check for TLS crypt key
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "frontend", "test", "-f", "/app/pki/tls-crypt.key"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "TLS crypt key not found in frontend container at /app/pki/tls-crypt.key"
+
+        print("✅ Frontend PKI certificates: OK")
+
+    def test_certtransparency_certificates_mounted(self, tests_dir):
+        """Test that PKI certificates are properly mounted in certtransparency container"""
+        # Check for intermediate CA certificate
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "certtransparency", "test", "-f", "/app/pki/intermediate-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Intermediate CA certificate not found in certtransparency container at /app/pki/intermediate-ca.crt"
+
+        # Check for intermediate CA private key
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "certtransparency", "test", "-f", "/app/pki/intermediate-ca.key"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Intermediate CA key not found in certtransparency container at /app/pki/intermediate-ca.key"
+
+        print("✅ Certificate Transparency PKI certificates: OK")
+
+    def test_signing_certificates_mounted(self, tests_dir):
+        """Test that PKI certificates are properly mounted in signing container"""
+        # Check for intermediate CA certificate
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "signing", "test", "-f", "/pki/intermediate-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Intermediate CA certificate not found in signing container at /pki/intermediate-ca.crt"
+
+        # Check for intermediate CA private key
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "signing", "test", "-f", "/pki/intermediate-ca.key"],
+            cwd=str(tests_dir),
+            capture_output=True
+        )
+        assert result.returncode == 0, "Intermediate CA key not found in signing container at /pki/intermediate-ca.key"
+
+        print("✅ Signing service PKI certificates: OK")
+
+    def test_certificate_validity(self, tests_dir):
+        """Test that certificates are valid PEM format"""
+        # Check that root-ca.crt in frontend is valid PEM
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "frontend", "cat", "/app/pki/root-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0, "Failed to read root-ca.crt"
+        assert "-----BEGIN CERTIFICATE-----" in result.stdout, "Root CA certificate is not valid PEM format"
+        assert "-----END CERTIFICATE-----" in result.stdout, "Root CA certificate is missing END marker"
+
+        # Check that intermediate-ca.crt is valid PEM
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", "frontend", "cat", "/app/pki/intermediate-ca.crt"],
+            cwd=str(tests_dir),
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0, "Failed to read intermediate-ca.crt"
+        assert "-----BEGIN CERTIFICATE-----" in result.stdout, "Intermediate CA certificate is not valid PEM format"
+        assert "-----END CERTIFICATE-----" in result.stdout, "Intermediate CA certificate is missing END marker"
+
+        print("✅ Certificate validity checks: OK")
+
+
 if __name__ == "__main__":
     # Allow running this directly for debugging
     import sys
