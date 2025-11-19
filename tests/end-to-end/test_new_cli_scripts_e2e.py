@@ -31,8 +31,7 @@ class TestNewCLIScriptsE2E:
 
         # Verify scripts exist
         for script in [self.profile_script, self.server_script, self.computer_script]:
-            if not os.path.exists(script):
-                pytest.skip(f"CLI script not found: {script}")
+            assert os.path.exists(script), f"CLI script not found: {script}"
 
     def test_user_profile_oidc_happy_path(self, page, cli_browser_integration):
         """Test get_openvpn_profile.py with OIDC authentication - happy path"""
@@ -87,11 +86,11 @@ class TestNewCLIScriptsE2E:
                     assert 'remote' in content, "Profile should contain remote directive"
                     print("✓ User profile generated successfully via get_openvpn_profile.py")
 
-            except subprocess.TimeoutExpired:
-                pytest.skip("CLI profile generation timed out")
+            except subprocess.TimeoutExpired as e:
+                pytest.fail(f"CLI profile generation timed out: {e}")
             except Exception as e:
                 print(f"  ! Authentication flow failed: {e}")
-                pytest.skip(f"OIDC authentication flow failed: {e}")
+                pytest.fail(f"OIDC authentication flow failed: {e}")
             finally:
                 # Clean up CLI process if still running
                 try:
@@ -112,8 +111,7 @@ class TestNewCLIScriptsE2E:
         try:
             psk_result = subprocess.run(psk_command, shell=True, capture_output=True, text=True, timeout=10)
 
-            if psk_result.returncode != 0:
-                pytest.skip(f"Could not create server PSK: {psk_result.stderr}")
+            assert psk_result.returncode == 0, f"Could not create server PSK: {psk_result.stderr}"
 
             # Extract PSK from output
             psk_key = None
@@ -122,13 +120,12 @@ class TestNewCLIScriptsE2E:
                     psk_key = line.split('PSK:')[1].strip()
                     break
 
-            if not psk_key:
-                pytest.skip("Could not extract PSK from CLI output")
+            assert psk_key is not None, f"Could not extract PSK from CLI output: {psk_result.stdout}"
 
             print(f"✓ Created server PSK: {psk_key[:8]}...")
 
-        except subprocess.TimeoutExpired:
-            pytest.skip("Server PSK creation timed out")
+        except subprocess.TimeoutExpired as e:
+            pytest.fail(f"Server PSK creation timed out: {e}")
 
         # Step 2: Use new server config script
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -154,8 +151,8 @@ class TestNewCLIScriptsE2E:
                 else:
                     pytest.fail(f"Server config generation failed: {result.stderr}")
 
-            except subprocess.TimeoutExpired:
-                pytest.skip("Server config generation timed out")
+            except subprocess.TimeoutExpired as e:
+                pytest.fail(f"Server config generation timed out: {e}")
 
     def test_computer_config_psk_happy_path(self, authenticated_page):
         """Test get_openvpn_computer_config.py with PSK authentication - happy path"""
@@ -168,8 +165,7 @@ class TestNewCLIScriptsE2E:
         try:
             psk_result = subprocess.run(psk_command, shell=True, capture_output=True, text=True, timeout=10)
 
-            if psk_result.returncode != 0:
-                pytest.skip(f"Could not create computer PSK: {psk_result.stderr}")
+            assert psk_result.returncode == 0, f"Could not create computer PSK: {psk_result.stderr}"
 
             # Extract PSK from output
             psk_key = None
@@ -178,13 +174,12 @@ class TestNewCLIScriptsE2E:
                     psk_key = line.split('PSK:')[1].strip()
                     break
 
-            if not psk_key:
-                pytest.skip("Could not extract PSK from CLI output")
+            assert psk_key is not None, f"Could not extract PSK from CLI output: {psk_result.stdout}"
 
             print(f"✓ Created computer PSK: {psk_key[:8]}...")
 
-        except subprocess.TimeoutExpired:
-            pytest.skip("Computer PSK creation timed out")
+        except subprocess.TimeoutExpired as e:
+            pytest.fail(f"Computer PSK creation timed out: {e}")
 
         # Step 2: Use new computer config script
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -212,8 +207,8 @@ class TestNewCLIScriptsE2E:
                 else:
                     pytest.fail(f"Computer config generation failed: {result.stderr}")
 
-            except subprocess.TimeoutExpired:
-                pytest.skip("Computer config generation timed out")
+            except subprocess.TimeoutExpired as e:
+                pytest.fail(f"Computer config generation timed out: {e}")
 
     def test_profile_script_invalid_psk_error_handling(self, cli_browser_integration):
         """Test get_openvpn_profile.py error handling with invalid server URL"""
@@ -326,8 +321,8 @@ class TestNewCLIScriptsE2E:
 
                 print("✓ File overwrite protection working correctly")
 
-            except subprocess.TimeoutExpired:
-                pytest.skip("Overwrite protection test timed out")
+            except subprocess.TimeoutExpired as e:
+                pytest.fail(f"Overwrite protection test timed out: {e}")
 
     def test_environment_variable_support(self, cli_browser_integration):
         """Test environment variable support in all scripts"""
@@ -372,8 +367,7 @@ class TestNewCLIScriptsE2E:
         try:
             psk_result = subprocess.run(psk_command, shell=True, capture_output=True, text=True, timeout=10)
 
-            if psk_result.returncode != 0:
-                pytest.skip(f"Could not create test PSK: {psk_result.stderr}")
+            assert psk_result.returncode == 0, f"Could not create test PSK: {psk_result.stderr}"
 
             # Extract PSK from output
             psk_key = None
@@ -382,8 +376,7 @@ class TestNewCLIScriptsE2E:
                     psk_key = line.split('PSK:')[1].strip()
                     break
 
-            if not psk_key:
-                pytest.skip("Could not extract PSK from CLI output")
+            assert psk_key is not None, f"Could not extract PSK from CLI output: {psk_result.stdout}"
 
             # Test with invalid server URL to trigger an error
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -399,10 +392,10 @@ class TestNewCLIScriptsE2E:
                 assert psk_key not in result.stderr, "PSK should not appear in stderr"
                 print("✓ PSK values are properly protected from exposure in error messages")
 
-        except subprocess.TimeoutExpired:
-            pytest.skip("PSK security test timed out")
+        except subprocess.TimeoutExpired as e:
+            pytest.fail(f"PSK security test timed out: {e}")
         except Exception as e:
-            pytest.skip(f"PSK security test failed to setup: {e}")
+            pytest.fail(f"PSK security test failed to setup: {e}")
 
 
 def test_all_scripts_exist():

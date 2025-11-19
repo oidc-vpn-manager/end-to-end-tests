@@ -20,8 +20,7 @@ def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration):
     
     # Check if CLI client exists
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
-    if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found - semi-automatic profile testing skipped")
+    assert os.path.exists(cli_path), f"CLI client not found - semi-automatic profile testing cannot proceed: {cli_path}"
     
     # Step 1: Run CLI command to request user profile using OIDC flow
     cli_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/test-profile.ovpn --force"
@@ -86,8 +85,7 @@ def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration):
     """Test token-based profile issuing flow"""
     
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
-    if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+    assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # This test demonstrates the concept, but the current CLI doesn't support 
     # direct cookie-based authentication - it uses OIDC flow
@@ -236,8 +234,7 @@ def test_profile_renewal_workflow(cli_browser_integration):
     """Test profile renewal workflow"""
     
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
-    if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+    assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Step 1: Request initial profile
     cli_command = f"python3 {cli_path}  --server-url http://localhost --output /tmp/renewal-test.ovpn --force"
@@ -282,8 +279,7 @@ def test_cli_error_handling(cli_browser_integration):
     """Test CLI error handling and user feedback"""
     
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
-    if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+    assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Test invalid server URL 
     invalid_command = f"python3 {cli_path}  --server-url invalid-url --output /tmp/invalid-test.ovpn"
@@ -366,8 +362,7 @@ def test_concurrent_profile_requests(cli_browser_integration):
     """Test handling of concurrent profile requests"""
     
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
-    if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+    assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Test basic concurrent concept - just verify CLI can handle multiple calls without crashing
     commands = [

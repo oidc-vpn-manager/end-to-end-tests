@@ -68,11 +68,11 @@ def test_server_bundle_api_direct(api_client):
     
     # Skip test if services aren't running
     if login_response.status_code >= 500:
-        pytest.skip(f"Services not available: {login_response.status_code}")
+        pytest.fail(f"Services not available: {login_response.status_code}")
     
     # For now, we'll accept various response codes during development
     if login_response.status_code not in [200, 302, 400]:
-        pytest.skip(f"Unexpected login response: {login_response.status_code}")
+        pytest.fail(f"Unexpected login response: {login_response.status_code}")
     
     # Test server bundle creation API
     bundle_data = {
@@ -113,7 +113,7 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
     # First ensure we have the CLI client available
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found - server bundle CLI testing skipped")
+        pytest.fail("CLI client not found - server bundle CLI testing skipped")
     
     # Step 1: Generate a valid PSK using the frontend CLI
     import time
@@ -124,7 +124,7 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
         psk_result = subprocess.run(psk_command, shell=True, capture_output=True, text=True, timeout=10)
         
         if psk_result.returncode != 0:
-            pytest.skip(f"Could not create PSK: {psk_result.stderr}")
+            pytest.fail(f"Could not create PSK: {psk_result.stderr}")
         
         # Extract PSK from output
         psk_key = None
@@ -134,14 +134,14 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
                 break
         
         if not psk_key:
-            pytest.skip("Could not extract PSK from output")
+            pytest.fail("Could not extract PSK from output")
         
         print(f"Generated PSK: {psk_key[:8]}...")
         
     except subprocess.TimeoutExpired:
-        pytest.skip("PSK generation timed out")
+        pytest.fail("PSK generation timed out")
     except Exception as e:
-        pytest.skip(f"PSK generation failed: {e}")
+        pytest.fail(f"PSK generation failed: {e}")
     
     # Step 2: Use the valid PSK to get server bundle via CLI
     cli_command = f"python3 {cli_path}  --server-url http://localhost --psk {psk_key} --target-dir /tmp/server-bundle-cli --force"
@@ -176,11 +176,11 @@ def test_server_bundle_cli_integration(cli_browser_integration, api_client):
                 # Failure - check if it's expected
                 error_output = process.stderr if process.stderr else process.stdout
                 if "server" in error_output.lower() or "bundle" in error_output.lower():
-                    pytest.skip(f"Server bundle functionality not fully implemented: {error_output}")
+                    pytest.fail(f"Server bundle functionality not fully implemented: {error_output}")
                 else:
                     pytest.fail(f"PSK profile request failed unexpectedly: {error_output}")
         else:
-            pytest.skip("CLI process timed out")
+            pytest.fail("CLI process timed out")
         
     except subprocess.TimeoutExpired:
         # CLI might hang waiting for auth - this is expected behavior
@@ -290,7 +290,7 @@ def test_server_bundle_permissions_and_security(authenticated_page):
         assert True
     except:
         # Feature might not be implemented yet
-        pytest.skip("Server bundle functionality not yet implemented")
+        pytest.fail("Server bundle functionality not yet implemented")
 
 
 def test_server_bundle_certificate_transparency_integration(authenticated_page, api_client):

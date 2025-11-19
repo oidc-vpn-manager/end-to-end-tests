@@ -21,7 +21,7 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
     # Check if CLI client exists
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+        pytest.fail("CLI client not found")
     
     admin_page = authenticated_page("admin")
     
@@ -62,7 +62,7 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
         psk_result = subprocess.run(psk_command, shell=True, capture_output=True, text=True, timeout=10)
         
         if psk_result.returncode != 0:
-            pytest.skip(f"Could not create CLI PSK: {psk_result.stderr}")
+            pytest.fail(f"Could not create CLI PSK: {psk_result.stderr}")
         
         # Extract PSK from output
         psk_key = None
@@ -72,13 +72,13 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
                 break
         
         if not psk_key:
-            pytest.skip("Could not extract PSK from CLI output")
+            pytest.fail("Could not extract PSK from CLI output")
             
         # Define hostname for bundle generation
         hostname = f"e2e-test-server-{int(time.time())}"
         
     except subprocess.TimeoutExpired:
-        pytest.skip("PSK CLI generation timed out")
+        pytest.fail("PSK CLI generation timed out")
     
     print(f"✓ Extracted PSK: {psk_key[:8]}...")
     
@@ -203,9 +203,9 @@ def test_server_certificate_ct_log_entry_details(authenticated_page):
             print(f"✓ Server certificate has expected attributes: {found_indicators}")
             
         else:
-            pytest.skip("No server certificates found in CT log to validate")
+            pytest.fail("No server certificates found in CT log to validate")
     else:
-        pytest.skip("No certificate table found in CT log")
+        pytest.fail("No certificate table found in CT log")
 
 
 def test_server_bundle_generates_unique_certificates(authenticated_page, cli_browser_integration):
@@ -216,7 +216,7 @@ def test_server_bundle_generates_unique_certificates(authenticated_page, cli_bro
     # Check if CLI client exists
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+        pytest.fail("CLI client not found")
     
     # Use CLI-based PSK generation instead of browser UI to avoid timeout issues
     generated_psks = []
@@ -264,7 +264,7 @@ def test_server_bundle_generates_unique_certificates(authenticated_page, cli_bro
     
     # Skip if we couldn't generate any PSKs
     if len(generated_psks) == 0:
-        pytest.skip("Could not generate any PSKs for testing")
+        pytest.fail("Could not generate any PSKs for testing")
     
     # Verify PSKs were created by checking admin UI
     admin_page = authenticated_page("admin")

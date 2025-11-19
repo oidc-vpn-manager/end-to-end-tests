@@ -16,7 +16,7 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
     # Check if CLI client exists
     cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
     if not os.path.exists(cli_path):
-        pytest.skip("CLI client not found")
+        pytest.fail("CLI client not found")
     
     # Step 1: Use Playwright to generate a PSK via admin UI
     admin_page = authenticated_page("admin")
@@ -54,7 +54,7 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
     import re
     psk_match = re.search(r'--psk\s+([a-f0-9\-]{36})', page_content)
     if not psk_match:
-        pytest.skip("Could not extract PSK from success page content")
+        pytest.fail("Could not extract PSK from success page content")
     
     psk_key = psk_match.group(1)
     
@@ -102,14 +102,14 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
                 # Check error output
                 error_output = process.stderr if process.stderr else process.stdout
                 if "500" in error_output or "internal server error" in error_output.lower():
-                    pytest.skip(f"Server bundle API not fully implemented: {error_output}")
+                    pytest.fail(f"Server bundle API not fully implemented: {error_output}")
                 else:
                     pytest.fail(f"Unexpected CLI failure: {error_output}")
         else:
-            pytest.skip("CLI process timed out")
+            pytest.fail("CLI process timed out")
             
     except subprocess.TimeoutExpired:
-        pytest.skip("CLI process timed out")
+        pytest.fail("CLI process timed out")
 
 
 def test_server_bundle_psk_ui_workflow(authenticated_page):
@@ -231,4 +231,4 @@ def test_server_bundle_file_validation(authenticated_page):
                 break
     
     if not found_files:
-        pytest.skip("No server bundle files found to validate")
+        pytest.fail("No server bundle files found to validate")
