@@ -22,9 +22,9 @@ class TestNewCLIScriptsE2E:
     """E2E tests for the three new CLI scripts"""
 
     @pytest.fixture(autouse=True)
-    def setup_cli_paths(self):
+    def setup_cli_paths(self, repository_root):
         """Setup paths to the new CLI scripts"""
-        self.base_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config"
+        self.base_path = str(repository_root / "tools" / "get_openvpn_config")
         self.profile_script = f"{self.base_path}/get_openvpn_profile.py"
         self.server_script = f"{self.base_path}/get_openvpn_server_config.py"
         self.computer_script = f"{self.base_path}/get_openvpn_computer_config.py"
@@ -398,9 +398,9 @@ class TestNewCLIScriptsE2E:
             pytest.fail(f"PSK security test failed to setup: {e}")
 
 
-def test_all_scripts_exist():
+def test_all_scripts_exist(repository_root):
     """Basic test to ensure all three scripts exist and are executable"""
-    base_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config"
+    base_path = str(repository_root / "tools" / "get_openvpn_config")
     scripts = [
         "get_openvpn_profile.py",
         "get_openvpn_server_config.py",
@@ -415,8 +415,8 @@ def test_all_scripts_exist():
     print("✓ All three new CLI scripts exist and are executable")
 
 
-def test_original_script_no_longer_exists():
+def test_original_script_no_longer_exists(repository_root):
     """Ensure the original monolithic script has been properly removed during refactoring"""
-    original_script = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_config.py"
+    original_script = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_config.py")
     assert not os.path.exists(original_script), "Original get_openvpn_config.py should be removed (replaced by specialized scripts)"
     print("✓ Original get_openvpn_config.py correctly removed (refactored into specialized scripts)")

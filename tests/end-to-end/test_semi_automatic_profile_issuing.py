@@ -15,11 +15,11 @@ import time
 from playwright.sync_api import expect, Page
 
 
-def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration):
+def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration, repository_root):
     """Test complete semi-automatic profile issuing with CLI + browser"""
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
     assert os.path.exists(cli_path), f"CLI client not found - semi-automatic profile testing cannot proceed: {cli_path}"
     
     # Step 1: Run CLI command to request user profile using OIDC flow
@@ -81,10 +81,10 @@ def test_semi_automatic_profile_cli_browser_flow(cli_browser_integration):
         print("CLI process timed out - may be waiting for user confirmation")
 
 
-def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration):
+def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration, repository_root):
     """Test token-based profile issuing flow"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
     assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # This test demonstrates the concept, but the current CLI doesn't support 
@@ -124,7 +124,7 @@ def test_semi_automatic_profile_token_flow(api_client, cli_browser_integration):
         print("⚠ CLI process timed out during token flow test")
 
 
-def test_profile_download_and_validation(authenticated_page):
+def test_profile_download_and_validation(authenticated_page, repository_root):
     """Test profile download and OpenVPN config validation"""
     user_page = authenticated_page("it")
     
@@ -173,7 +173,7 @@ def test_profile_download_and_validation(authenticated_page):
         print("⚠ No profile download available - testing profile creation via CLI instead")
         
         # Alternative: Test that we can create a profile via CLI and verify the process works
-        cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+        cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
         if os.path.exists(cli_path):
             # Just verify the CLI tool exists and can be executed (basic functionality test)
             result = subprocess.run([
@@ -185,7 +185,7 @@ def test_profile_download_and_validation(authenticated_page):
             print("✓ CLI tool validated as functional for profile operations")
 
 
-def test_profile_certificate_transparency_logging(authenticated_page):
+def test_profile_certificate_transparency_logging(authenticated_page, repository_root):
     """Test that user certificates appear in Certificate Transparency log"""
     # First create a user profile
     user_page = authenticated_page("it")
@@ -230,10 +230,10 @@ def test_profile_certificate_transparency_logging(authenticated_page):
         print(f"Found {email_cells.count()} certificates for {test_email} in CT log")
 
 
-def test_profile_renewal_workflow(cli_browser_integration):
+def test_profile_renewal_workflow(cli_browser_integration, repository_root):
     """Test profile renewal workflow"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
     assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Step 1: Request initial profile
@@ -275,10 +275,10 @@ def test_profile_renewal_workflow(cli_browser_integration):
         print("⚠ Profile renewal CLI process timed out - testing renewal concept")
 
 
-def test_cli_error_handling(cli_browser_integration):
+def test_cli_error_handling(cli_browser_integration, repository_root):
     """Test CLI error handling and user feedback"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
     assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Test invalid server URL 
@@ -358,10 +358,10 @@ def validate_openvpn_profile(profile_path):
     print(f"✓ OpenVPN profile validation passed. Directives: {found_directives}, Certs: {found_certs}")
 
 
-def test_concurrent_profile_requests(cli_browser_integration):
+def test_concurrent_profile_requests(cli_browser_integration, repository_root):
     """Test handling of concurrent profile requests"""
     
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_profile.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_profile.py")
     assert os.path.exists(cli_path), f"CLI client not found: {cli_path}"
     
     # Test basic concurrent concept - just verify CLI can handle multiple calls without crashing

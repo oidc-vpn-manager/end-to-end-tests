@@ -11,7 +11,7 @@ import time
 class TestAuthFlow:
     """Integration test for complete OIDC authentication flow"""
 
-    def test_complete_auth_flow(self, page: Page):
+    def test_complete_auth_flow(self, tests_dir, page: Page):
         """Test the complete OIDC authentication flow using browser automation"""
         
         print("1. Testing frontend redirect to login...")
@@ -99,7 +99,7 @@ class TestAuthFlow:
         expect(page.locator("body")).to_contain_text("TheBOFH")
         print("✓ Session persists across page reloads!")
 
-    def test_it_user_auth_flow(self, page: Page):
+    def test_it_user_auth_flow(self, tests_dir, page: Page):
         """Test authentication flow with IT user"""
         
         # Start at frontend root
@@ -127,7 +127,7 @@ class TestAuthFlow:
         expect(page.locator("body")).to_contain_text("Moss")
         print("✓ IT user authentication successful!")
 
-    def test_logout_flow(self, page: Page):
+    def test_logout_flow(self, tests_dir, page: Page):
         """Test that logout works properly"""
         
         # First authenticate
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         # Run the test using pytest
         result = subprocess.run([
             sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"
-        ], cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests")
+        ], cwd=str(tests_dir))
         
         if result.returncode == 0:
             print("\n🎉 Integration test PASSED!")

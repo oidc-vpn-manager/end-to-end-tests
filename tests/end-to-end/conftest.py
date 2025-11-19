@@ -8,8 +8,53 @@ import os
 import subprocess
 import time
 import fcntl
+from pathlib import Path
 from http.cookies import SimpleCookie
 from playwright.sync_api import Playwright, Browser, BrowserContext, Page
+
+
+@pytest.fixture(scope="session")
+def repository_root():
+    """
+    Dynamically determine the repository root directory.
+    This works regardless of whether tests are run from /home/user/... or /workspaces/...
+
+    Returns:
+        Path: Absolute path to the repository root
+    """
+    # Start from the current file's location and traverse up to find the repo root
+    current_file = Path(__file__).resolve()
+
+    # tests/end-to-end/conftest.py -> tests/ -> repo_root/
+    repo_root = current_file.parent.parent.parent
+
+    # Verify this is actually the repository root by checking for key files
+    assert (repo_root / "LLM_INTRO.md").exists(), f"Repository root not found from {current_file}"
+    assert (repo_root / "tests").exists(), f"Tests directory not found in {repo_root}"
+
+    return repo_root
+
+
+@pytest.fixture(scope="session")
+def tests_dir(repository_root):
+    """
+    Get the tests directory path.
+
+    Returns:
+        Path: Absolute path to the tests directory
+    """
+    return repository_root / "tests"
+
+
+@pytest.fixture(scope="session")
+def tools_dir(repository_root):
+    """
+    Get the tools directory path.
+
+    Returns:
+        Path: Absolute path to the tools directory
+    """
+    return repository_root / "tools"
 
 
 @pytest.fixture(scope="session")
@@ -232,14 +277,14 @@ def api_client():
 
 
 @pytest.fixture(scope="function")
-def cli_browser_integration(page: Page):
+def cli_browser_integration(page: Page, repository_root):
     """
     Helper fixture for CLI commands that need browser integration
     """
     class CLIBrowserIntegration:
-        def __init__(self, page):
+        def __init__(self, page, repository_root):
             self.page = page
-            self.mock_xdg_open_path = "/workspaces/2025-06_openvpn-manager_gh-org/tests/end-to-end/mock-xdg-open.sh"
+            self.mock_xdg_open_path = str(repository_root / "tests" / "end-to-end" / "mock-xdg-open.sh")
             self.capture_file = "/tmp/xdg-open-captured-url.txt"
             self.log_file = "/tmp/xdg-open-capture.log"
             
@@ -380,6 +425,6 @@ def cli_browser_integration(page: Page):
                 if os.path.exists(filepath):
                     os.remove(filepath)
                     
-    integration = CLIBrowserIntegration(page)
+    integration = CLIBrowserIntegration(page, repository_root)
     yield integration
     integration.cleanup()

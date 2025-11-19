@@ -10,7 +10,7 @@ from urllib.parse import urlparse, parse_qs
 class TestOIDCFlow:
     """End-to-end OIDC authentication flow test using browser automation"""
 
-    def test_complete_flow(self, page: Page):
+    def test_complete_flow(self, tests_dir, page: Page):
         """Test the complete OIDC authentication flow using Playwright"""
         
         print("🚀 Starting end-to-end Playwright authentication test...")
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         # Run the test using pytest
         result = subprocess.run([
             sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"
-        ], cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests")
+        ], cwd=str(tests_dir))
         
         if result.returncode == 0:
             print("\n🎉 END-TO-END PLAYWRIGHT TEST PASSED!")

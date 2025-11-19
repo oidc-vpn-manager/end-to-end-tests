@@ -20,11 +20,11 @@ class TestServiceReadiness:
         'tiny-oidc'
     ]
 
-    def test_all_services_running(self):
+    def test_all_services_running(self, tests_dir):
         """Test that all required docker-compose services are running"""
         result = subprocess.run(
             ["docker", "compose", "ps", "--services", "--filter", "status=running"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -41,11 +41,11 @@ class TestServiceReadiness:
         
         print("✅ All required services are running")
 
-    def test_frontend_flask_cli_available(self):
+    def test_frontend_flask_cli_available(self, tests_dir):
         """Test that Flask CLI is available in the frontend service"""
         result = subprocess.run(
             ["docker", "compose", "exec", "-T", "frontend", "flask", "--help"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -54,11 +54,11 @@ class TestServiceReadiness:
         assert "Usage: flask" in result.stdout
         print("✅ Frontend Flask CLI: OK")
 
-    def test_frontend_database_migrations(self):
+    def test_frontend_database_migrations(self, tests_dir):
         """Test that database migrations are properly applied"""
         result = subprocess.run(
             ["docker", "compose", "exec", "-T", "frontend", "flask", "db", "current"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -67,11 +67,11 @@ class TestServiceReadiness:
         print(f"✅ Database migration status: {result.stdout.strip()}")
         # Note: We allow this to succeed even if no migrations exist yet
 
-    def test_frontend_routes_available(self):
+    def test_frontend_routes_available(self, tests_dir):
         """Test that Flask routes are properly registered"""
         result = subprocess.run(
             ["docker", "compose", "exec", "-T", "frontend", "flask", "routes"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -91,7 +91,7 @@ class TestServiceHealth:
     ]
 
     @pytest.mark.parametrize("service_name,url,expected_codes", SERVICE_ENDPOINTS)
-    def test_service_health_endpoint(self, service_name: str, url: str, expected_codes: List[int]):
+    def test_service_health_endpoint(self, tests_dir, service_name: str, url: str, expected_codes: List[int]):
         """Test that service health endpoints respond correctly"""
         try:
             response = requests.get(url, timeout=5, allow_redirects=False)
@@ -105,7 +105,7 @@ class TestServiceHealth:
 class TestAuthenticationFlow:
     """Test that authentication flow components are working"""
 
-    def test_oidc_discovery_endpoint(self):
+    def test_oidc_discovery_endpoint(self, tests_dir):
         """Test OIDC discovery endpoint is available"""
         try:
             response = requests.get("http://localhost:8000/.well-known/openid-configuration", timeout=5)
@@ -119,7 +119,7 @@ class TestAuthenticationFlow:
         except requests.exceptions.RequestException as e:
             pytest.fail(f"⚠️ OIDC Discovery: Connection failed - {e}")
 
-    def test_frontend_auth_redirect(self):
+    def test_frontend_auth_redirect(self, tests_dir):
         """Test that frontend auth login endpoint is accessible"""
         try:
             response = requests.get("http://localhost:80/auth/login", timeout=5, allow_redirects=False)
@@ -134,7 +134,7 @@ class TestAuthenticationFlow:
 class TestDatabaseConnectivity:
     """Test database connectivity for services"""
 
-    def test_frontend_database_connection(self):
+    def test_frontend_database_connection(self, tests_dir):
         """Test database connectivity from frontend service"""
         db_test_script = """
 import sys
@@ -155,7 +155,7 @@ except Exception as e:
         
         result = subprocess.run(
             ["docker", "compose", "exec", "-T", "frontend", "python3", "-c", db_test_script],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )

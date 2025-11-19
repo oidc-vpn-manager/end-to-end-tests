@@ -107,11 +107,11 @@ def test_server_bundle_api_direct(api_client):
             assert 'bundle_id' in bundle_info or 'download_url' in bundle_info
 
 
-def test_server_bundle_cli_integration(cli_browser_integration, api_client):
+def test_server_bundle_cli_integration(cli_browser_integration, api_client, repository_root):
     """Test server bundle issuing with CLI + PSK authentication"""
     
     # First ensure we have the CLI client available
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
         pytest.fail("CLI client not found - server bundle CLI testing skipped")
     

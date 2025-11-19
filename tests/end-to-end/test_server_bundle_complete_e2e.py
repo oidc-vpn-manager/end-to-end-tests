@@ -19,7 +19,7 @@ def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_int
     """
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
         pytest.fail("CLI client not found")
     
@@ -214,7 +214,7 @@ def test_server_bundle_generates_unique_certificates(authenticated_page, cli_bro
     """
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
         pytest.fail("CLI client not found")
     

@@ -15,11 +15,11 @@ import time
 class TestPSKGenerationIntegration:
     """Test suite for PSK generation integration tests."""
     
-    def test_dev_create_psk_command_exists(self):
+    def test_dev_create_psk_command_exists(self, tests_dir):
         """Test that the dev:create-psk command is available."""
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "--help"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -27,12 +27,12 @@ class TestPSKGenerationIntegration:
         assert result.returncode == 0
         assert "dev:create-psk" in result.stdout
     
-    def test_psk_generation_basic(self):
+    def test_psk_generation_basic(self, tests_dir):
         """Test basic PSK generation functionality."""
         description = f"test-server-{int(time.time())}.example.com"
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=30
@@ -52,13 +52,13 @@ class TestPSKGenerationIntegration:
         # Should contain some kind of PSK identifier or success message
         assert any(keyword in output.lower() for keyword in ['psk', 'key', 'created', 'generated', 'success'])
     
-    def test_psk_generation_with_expiration(self):
+    def test_psk_generation_with_expiration(self, tests_dir):
         """Test PSK generation with expiration parameter."""
         description = f"integration-test-{int(time.time())}.example.com"
         
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description, "--expires-days", "30"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=30
@@ -75,11 +75,11 @@ class TestPSKGenerationIntegration:
         output = result.stdout
         assert description in output or "integration-test" in output
     
-    def test_psk_generation_help(self):
+    def test_psk_generation_help(self, tests_dir):
         """Test that PSK generation command has help documentation."""
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--help"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=15
@@ -89,7 +89,7 @@ class TestPSKGenerationIntegration:
         assert "Usage:" in result.stdout
         assert "dev:create-psk" in result.stdout
     
-    def test_database_connectivity_via_psk_creation(self):
+    def test_database_connectivity_via_psk_creation(self, tests_dir):
         """Test that PSK creation implies database connectivity is working."""
         # Create a PSK and verify it worked, which implies:
         # 1. Database connection is working
@@ -99,7 +99,7 @@ class TestPSKGenerationIntegration:
         description = f"db-test-{int(time.time())}.example.com"
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=30
@@ -121,11 +121,11 @@ class TestPSKGenerationIntegration:
 class TestFrontendCLIIntegration:
     """Test suite for other frontend CLI command integration tests."""
     
-    def test_dev_create_auth_command_exists(self):
+    def test_dev_create_auth_command_exists(self, tests_dir):
         """Test that development auth command exists."""
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "--help"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )
@@ -133,11 +133,11 @@ class TestFrontendCLIIntegration:
         assert result.returncode == 0
         assert "dev:create-dev-auth" in result.stdout
     
-    def test_database_migration_status(self):
+    def test_database_migration_status(self, tests_dir):
         """Test that database migrations are applied."""
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "db", "current"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=15
@@ -148,11 +148,11 @@ class TestFrontendCLIIntegration:
         # Should show some migration information
         assert len(result.stdout.strip()) > 0, "No migration status returned"
     
-    def test_flask_routes_accessible(self):
+    def test_flask_routes_accessible(self, tests_dir):
         """Test that Flask routes command works and shows expected routes."""
         result = subprocess.run(
             ["docker-compose", "exec", "-T", "frontend", "flask", "routes"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True,
             timeout=15
@@ -176,11 +176,11 @@ class TestFrontendCLIIntegration:
 class TestServiceHealthChecks:
     """Test suite for service health checks via docker-compose."""
     
-    def test_all_required_services_running(self):
+    def test_all_required_services_running(self, tests_dir):
         """Test that all required services are running."""
         result = subprocess.run(
             ["docker-compose", "ps", "--format", "json"],
-            cwd="/workspaces/2025-06_openvpn-manager_gh-org/tests",
+            cwd=str(tests_dir),
             capture_output=True,
             text=True
         )

@@ -14,7 +14,7 @@ def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_br
     """Test complete server bundle workflow using Playwright to generate PSK"""
     
     # Check if CLI client exists
-    cli_path = "/workspaces/2025-06_openvpn-manager_gh-org/tools/get_openvpn_config/get_openvpn_server_config.py"
+    cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
         pytest.fail("CLI client not found")
     
