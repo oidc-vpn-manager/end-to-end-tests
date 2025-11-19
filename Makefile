@@ -99,39 +99,95 @@ rebuild_docker_and_push: rebuild_docker push_docker_images
 
 check_services_ready:
 	@echo "⏳ Running pre-flight service readiness tests..."
-	@bash -c "cd tests && pytest pre-flight-tests/ -v" 2>&1 | tee suite_test_results/pre_flight.$(timestamp).log
+	@bash -c "cd tests && pytest pre-flight-tests/ -v" 2>&1 | tee suite_test_results/pre_flight.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ PRE-FLIGHT TESTS FAILED - Test suite cannot proceed" ; \
+		echo "❌ Please check suite_test_results/pre_flight.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ Pre-flight tests passed - proceeding with test suite"
 
 # The following tests are all unit, functional and integration tests local to the services or tools themselves
 test_certtransparency:
 	@echo "📋 Checking certtransparency service"
 	@rm -f suite_test_results/certtransparency.log
-	@bash -c "cd services/certtransparency && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/certtransparency.log | tee suite_test_results/certtransparency.$(timestamp).log
+	@bash -c "cd services/certtransparency && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/certtransparency.log | tee suite_test_results/certtransparency.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ CERTTRANSPARENCY TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/certtransparency.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ Certificate Transparency tests passed"
 
 test_frontend:
 	@echo "📋 Checking frontend service"
 	@rm -f suite_test_results/frontend.log
-	@bash -c "cd services/frontend         && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/frontend.log | tee suite_test_results/frontend.$(timestamp).log
+	@bash -c "cd services/frontend         && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/frontend.log | tee suite_test_results/frontend.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ FRONTEND TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/frontend.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ Frontend tests passed"
 
 test_signing:
 	@echo "📋 Checking signing service"
 	@rm -f suite_test_results/signing.log
-	@bash -c "cd services/signing          && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/signing.log | tee suite_test_results/signing.$(timestamp).log
+	@bash -c "cd services/signing          && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/signing.log | tee suite_test_results/signing.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ SIGNING SERVICE TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/signing.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ Signing service tests passed"
 
 
 test_get_openvpn_config:
 	@echo "📋 Checking get_openvpn_config tool"
 	@rm -f suite_test_results/get_config.log
-	@bash -c "cd tools/get_openvpn_config  && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/get_config.log | tee suite_test_results/get_config.$(timestamp).log
+	@bash -c "cd tools/get_openvpn_config  && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/get_config.log | tee suite_test_results/get_config.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ GET_OPENVPN_CONFIG TOOL TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/get_config.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ get_openvpn_config tool tests passed"
 
 test_pki_tool:
 	@echo "📋 Checking pki_tool"
 	@rm -f suite_test_results/generate_pki.log
-	@bash -c "cd tools/pki_tool            && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/generate_pki.log | tee suite_test_results/generate_pki.$(timestamp).log
+	@bash -c "cd tools/pki_tool            && PYTHONPATH=. TRACE=true pytest tests --cov" 2>&1 | ts | tee suite_test_results/generate_pki.log | tee suite_test_results/generate_pki.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ PKI_TOOL TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/generate_pki.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ pki_tool tests passed"
 
 test_browser:
 	@echo "📋 Running end-to-end tests with Playwright"
 	@rm -f suite_test_results/e2e_tests.log
-	@bash -c "cd tests                     && pytest end-to-end/ -v --browser chromium" 2>&1 | ts | tee suite_test_results/e2e_tests.log | tee suite_test_results/e2e_tests.$(timestamp).log
+	@bash -c "cd tests                     && pytest end-to-end/ -v --browser chromium" 2>&1 | ts | tee suite_test_results/e2e_tests.log | tee suite_test_results/e2e_tests.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ END-TO-END TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/e2e_tests.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ End-to-end tests passed"
 
 get_docker_logs:
 	@echo "🔍 Pulling docker logs, excluding /health lines"
