@@ -200,15 +200,18 @@ class TestProfileDownloads:
         # Authenticate and stay on root page
         page.goto("http://localhost/")
         page.wait_for_load_state("networkidle")
-        
+
         # Click the admin user login button on OIDC page
         admin_button = page.locator("button:has-text('Login as admin')")
         expect(admin_button).to_be_visible()
         admin_button.click()
-        
+
         # Wait for redirect back to root page with config generation form
+        # Use explicit wait for the h2 element instead of just networkidle to avoid race condition
         page.wait_for_load_state("networkidle")
-        expect(page.locator("h2")).to_contain_text("Generate VPN Configuration")
+        h2_locator = page.locator("h2")
+        expect(h2_locator).to_be_visible(timeout=10000)
+        expect(h2_locator).to_contain_text("Generate VPN Configuration")
         
         # Expand the options details element first
         details_summary = page.locator("details summary")

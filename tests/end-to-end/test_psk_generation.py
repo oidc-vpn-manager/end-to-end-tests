@@ -18,7 +18,7 @@ class TestPSKGenerationIntegration:
     def test_dev_create_psk_command_exists(self, tests_dir):
         """Test that the dev:create-psk command is available."""
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "--help"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "--help"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True
@@ -31,7 +31,7 @@ class TestPSKGenerationIntegration:
         """Test basic PSK generation functionality."""
         description = f"test-server-{int(time.time())}.example.com"
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -57,7 +57,7 @@ class TestPSKGenerationIntegration:
         description = f"integration-test-{int(time.time())}.example.com"
         
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description, "--expires-days", "30"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description, "--expires-days", "30"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -78,7 +78,7 @@ class TestPSKGenerationIntegration:
     def test_psk_generation_help(self, tests_dir):
         """Test that PSK generation command has help documentation."""
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--help"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--help"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -98,7 +98,7 @@ class TestPSKGenerationIntegration:
         
         description = f"db-test-{int(time.time())}.example.com"
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "dev:create-psk", "--description", description],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -124,7 +124,7 @@ class TestFrontendCLIIntegration:
     def test_dev_create_auth_command_exists(self, tests_dir):
         """Test that development auth command exists."""
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "--help"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "--help"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True
@@ -136,7 +136,7 @@ class TestFrontendCLIIntegration:
     def test_database_migration_status(self, tests_dir):
         """Test that database migrations are applied."""
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "db", "current"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "db", "current"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -151,7 +151,7 @@ class TestFrontendCLIIntegration:
     def test_flask_routes_accessible(self, tests_dir):
         """Test that Flask routes command works and shows expected routes."""
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "frontend", "flask", "routes"],
+            ["docker", "compose", "exec", "-T", "frontend", "flask", "routes"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True,
@@ -179,7 +179,7 @@ class TestServiceHealthChecks:
     def test_all_required_services_running(self, tests_dir):
         """Test that all required services are running."""
         result = subprocess.run(
-            ["docker-compose", "ps", "--format", "json"],
+            ["docker", "compose", "ps", "--format", "json"],
             cwd=str(tests_dir),
             capture_output=True,
             text=True

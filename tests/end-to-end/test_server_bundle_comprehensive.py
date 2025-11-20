@@ -10,9 +10,9 @@ import os
 from playwright.sync_api import expect, Page
 
 
-def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_browser_integration):
+def test_server_bundle_with_playwright_psk_generation(authenticated_page, cli_browser_integration, repository_root):
     """Test complete server bundle workflow using Playwright to generate PSK"""
-    
+
     # Check if CLI client exists
     cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):

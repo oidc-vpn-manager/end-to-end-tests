@@ -13,11 +13,11 @@ import os
 from playwright.sync_api import expect, Page
 
 
-def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_integration):
+def test_complete_server_bundle_e2e_workflow(authenticated_page, cli_browser_integration, repository_root):
     """
     Complete E2E test: PSK creation → CLI bundle generation → CT log verification
     """
-    
+
     # Check if CLI client exists
     cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
@@ -208,11 +208,11 @@ def test_server_certificate_ct_log_entry_details(authenticated_page):
         pytest.fail("No certificate table found in CT log")
 
 
-def test_server_bundle_generates_unique_certificates(authenticated_page, cli_browser_integration):
+def test_server_bundle_generates_unique_certificates(authenticated_page, cli_browser_integration, repository_root):
     """
     Test that each server bundle request generates a unique certificate
     """
-    
+
     # Check if CLI client exists
     cli_path = str(repository_root / "tools" / "get_openvpn_config" / "get_openvpn_server_config.py")
     if not os.path.exists(cli_path):
