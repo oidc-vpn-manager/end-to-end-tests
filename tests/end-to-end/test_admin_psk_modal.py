@@ -237,7 +237,7 @@ class TestPSKCommandModal:
             
             # Check that curl command is present and correctly formatted
             curl_command = page.locator(".command-block").first.locator("code")
-            expect(curl_command).to_contain_text("curl -O https://raw.githubusercontent.com/openvpn-manager/get-openvpn-config/refs/heads/main/get_openvpn_config.py")
+            expect(curl_command).to_contain_text("curl -O https://raw.githubusercontent.com/oidc-vpn-manager/get-openvpn-config/refs/heads/main/get_openvpn_config.py")
             
             # Check that python command is present and correctly formatted
             python_command = page.locator("#pythonCommand")

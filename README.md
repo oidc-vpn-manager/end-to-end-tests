@@ -60,8 +60,8 @@ The system consists of three core microservices that work together to provide se
 
 ## 🚦 Quick Start
 
-1. **Generate PKI materials**: Use the [PKI tool](https://github.com/openvpn-manager/pki_tool) to create root and intermediate CAs
-2. **Deploy services**: Follow the [Docker deployment guide](https://github.com/openvpn-manager/deploy-with-docker/blob/main/README.md) for a quick start
+1. **Generate PKI materials**: Use the [PKI tool](https://github.com/oidc-vpn-manager/pki_tool) to create root and intermediate CAs
+2. **Deploy services**: Follow the [Docker deployment guide](https://github.com/oidc-vpn-manager/deploy-with-docker/blob/main/README.md) for a quick start
 3. **Configure OIDC**: Set up authentication with your identity provider
 4. **Create server certificates**: Use the admin interface to generate server configurations
 5. **Issue user certificates**: Users can self-service through the web portal
@@ -84,8 +84,8 @@ All services maintain 100% test coverage with comprehensive unit, integration, a
 ### Development Environment
 ```bash
 # Clone the repository
-git clone https://github.com/openvpn-manager/end-to-end-tests openvpn-manager --recurse-submodules
-cd openvpn-manager
+git clone https://github.com/oidc-vpn-manager/end-to-end-tests oidc-vpn-manager --recurse-submodules
+cd oidc-vpn-manager
 
 # Start development environment
 cd tests

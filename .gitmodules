@@ -1,30 +1,30 @@
 [submodule "frontend_service"]
 	path = services/frontend
-	url = https://github.com/openvpn-manager/frontend_service.git
+	url = https://github.com/oidc-vpn-manager/frontend_service.git
 [submodule "webauth_service"]
 	path = services/webauth
-	url = https://github.com/openvpn-manager/webauth_service.git
+	url = https://github.com/oidc-vpn-manager/webauth_service.git
 [submodule "docs"]
 	path = docs
-	url = https://github.com/openvpn-manager/docs.git
+	url = https://github.com/oidc-vpn-manager/docs.git
 [submodule "signing_service"]
 	path = services/signing
-	url = https://github.com/openvpn-manager/signing_service.git
+	url = https://github.com/oidc-vpn-manager/signing_service.git
 [submodule "certtransparency_service"]
 	path = services/certtransparency
-	url = https://github.com/openvpn-manager/certtransparency_service.git
+	url = https://github.com/oidc-vpn-manager/certtransparency_service.git
 [submodule "pki_tool"]
 	path = tools/pki_tool
-	url = https://github.com/openvpn-manager/pki_tool.git
+	url = https://github.com/oidc-vpn-manager/pki_tool.git
 [submodule "tests/tiny-oidc"]
 	path = tests/tiny-oidc
 	url = https://github.com/authenti-kate/tiny-oidc.git
 [submodule "tools/get_openvpn_config"]
 	path = tools/get_openvpn_config
-	url = https://github.com/openvpn-manager/get-openvpn-config.git
+	url = https://github.com/oidc-vpn-manager/get-openvpn-config.git
 [submodule "deploy/with-docker"]
 	path = deploy/with-docker
-	url = https://github.com/openvpn-manager/deploy-with-docker.git
+	url = https://github.com/oidc-vpn-manager/deploy-with-docker.git
 [submodule "deploy/with-helm"]
 	path = deploy/with-helm
-	url = https://github.com/openvpn-manager/deploy-with-helm.git
+	url = https://github.com/oidc-vpn-manager/deploy-with-helm.git

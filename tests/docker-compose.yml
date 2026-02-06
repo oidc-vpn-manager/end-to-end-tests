@@ -12,7 +12,7 @@ services:
     command: "sh -x -e -E -c 'mkdir -p /data/sqlite && chmod 777 /data/sqlite && chown -R 1001:1001 /data/sqlite'"
 
   certtransparency-migrate:
-    image: ghcr.io/openvpn-manager/certtransparency:latest
+    image: ghcr.io/oidc-vpn-manager/certtransparency:latest
     build:
       context: ../services/certtransparency
     env_file:
@@ -29,7 +29,7 @@ services:
         condition: service_completed_successfully
 
   certtransparency:
-    image: ghcr.io/openvpn-manager/certtransparency:latest
+    image: ghcr.io/oidc-vpn-manager/certtransparency:latest
     build:
       context: ../services/certtransparency
     env_file:
@@ -48,7 +48,7 @@ services:
         condition: service_completed_successfully
 
   frontend-migrate:
-    image: ghcr.io/openvpn-manager/frontend:latest
+    image: ghcr.io/oidc-vpn-manager/frontend:latest
     build:
       context: ../services/frontend
     env_file:
@@ -72,7 +72,7 @@ services:
         condition: service_completed_successfully
 
   frontend:
-    image: ghcr.io/openvpn-manager/frontend:latest
+    image: ghcr.io/oidc-vpn-manager/frontend:latest
     build:
       context: ../services/frontend
     env_file:
@@ -98,7 +98,7 @@ services:
         condition: service_completed_successfully
 
   frontend-user:
-    image: ghcr.io/openvpn-manager/frontend:latest
+    image: ghcr.io/oidc-vpn-manager/frontend:latest
     build:
       context: ../services/frontend
     env_file:
@@ -126,7 +126,7 @@ services:
         condition: service_completed_successfully
 
   frontend-admin:
-    image: ghcr.io/openvpn-manager/frontend:latest
+    image: ghcr.io/oidc-vpn-manager/frontend:latest
     build:
       context: ../services/frontend
     env_file:
@@ -154,7 +154,7 @@ services:
         condition: service_completed_successfully
 
   signing-init:
-    image: ghcr.io/openvpn-manager/signing:latest
+    image: ghcr.io/oidc-vpn-manager/signing:latest
     build:
       context: ../services/signing
     command: ./import_pki.sh
@@ -171,7 +171,7 @@ services:
       TARGET_GID: 1001
 
   signing:
-    image: ghcr.io/openvpn-manager/signing:latest
+    image: ghcr.io/oidc-vpn-manager/signing:latest
     build:
       context: ../services/signing
     env_file:

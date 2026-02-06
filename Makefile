@@ -55,8 +55,8 @@ push_docker_images: rebuild_docker_images
 		source .fn.semver_bump.sh ; \
 		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
 		export datestamp=$$(date +"%Y%m%d") ; \
-		echo "🔍 Processing openvpn-manager images with contexts..." ; \
-		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"openvpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		echo "🔍 Processing oidc-vpn-manager images with contexts..." ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
 		for service in $$services ; \
 		do \
 			export image="$$(echo $$service | cut -d"|" -f1)" ; \
