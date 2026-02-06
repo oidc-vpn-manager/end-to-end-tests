@@ -24,18 +24,24 @@ class TestOIDCFlow:
         assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
         print(f"✓ Frontend redirected to OIDC provider: {current_url}")
         
-        # 2. Verify nonce is present in the authorization URL
-        print("2. Verifying nonce parameter...")
+        # 2. Verify nonce and PKCE parameters are present in the authorization URL
+        print("2. Verifying nonce and PKCE parameters...")
         parsed_url = urlparse(current_url)
         if "/c2s/authorize" in current_url:
             # We're at the authorization endpoint - check for nonce parameter
             params = parse_qs(parsed_url.query)
             assert 'nonce' in params, "Nonce parameter should be present in authorization URL"
             nonce_value = params['nonce'][0]
-            print(f"✓ Nonce parameter found: {nonce_value}")
+            print(f"   Nonce parameter found: {nonce_value}")
+            # Verify PKCE (RFC 7636) parameters
+            assert 'code_challenge' in params, "code_challenge parameter should be present in authorization URL (PKCE RFC 7636)"
+            assert 'code_challenge_method' in params, "code_challenge_method parameter should be present in authorization URL"
+            assert params['code_challenge_method'][0] == 'S256', "code_challenge_method should be S256"
+            print(f"   PKCE code_challenge found: {params['code_challenge'][0][:20]}...")
+            print(f"   PKCE code_challenge_method: S256")
         elif "/user/login" in current_url:
             # We were redirected directly to login (normal behavior when not already at auth endpoint)
-            print("✓ Redirected directly to login page (nonce handled internally)")
+            print("   Redirected directly to login page (nonce and PKCE handled internally)")
         
         # 3. Should show the OIDC login page
         print("3. Verifying OIDC login page...")
@@ -79,7 +85,8 @@ class TestOIDCFlow:
         
         print("✅ SUCCESS! Complete OIDC authentication flow working perfectly!")
         print("   - Frontend redirects unauthenticated users")
-        print("   - OIDC flow includes nonce for security")
+        print("   - OIDC flow includes nonce for ID token security")
+        print("   - OIDC flow includes PKCE (RFC 7636) for authorization code security")
         print("   - Authentication completes successfully")
         print("   - Session persists after authentication")
 
