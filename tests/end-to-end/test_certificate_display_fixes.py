@@ -113,8 +113,10 @@ class TestCertificateDisplayFixes:
                 expires_text = expires_cell.text_content()
                 assert expires_text and "N/A" not in expires_text, f"Expires date should not be N/A, got: {expires_text}"
                 
-                # Should contain a year (2025 or 2026)
-                assert ("2025" in expires_text or "2026" in expires_text), f"Expires should contain valid year, got: {expires_text}"
+                # Should contain a year relative to now (current year or next year)
+                from datetime import datetime
+                now_year = datetime.now().year
+                assert (str(now_year) in expires_text or str(now_year + 1) in expires_text), f"Expires should contain valid year ({now_year} or {now_year + 1}), got: {expires_text}"
 
     def test_certificate_detail_shows_complete_information(self, page: Page):
         """Test that certificate detail page shows complete certificate information."""
@@ -173,14 +175,16 @@ class TestCertificateDisplayFixes:
             if valid_from_row.count() > 0:
                 valid_from_value = valid_from_row.locator("td").last.text_content()
                 assert valid_from_value and valid_from_value.strip() != "N/A", f"Valid From should not be N/A, got: {valid_from_value}"
-                assert ("2025" in valid_from_value), f"Valid From should contain 2025, got: {valid_from_value}"
+                from datetime import datetime
+                now_year = datetime.now().year
+                assert (str(now_year) in valid_from_value or str(now_year - 1) in valid_from_value), f"Valid From should contain {now_year} or {now_year - 1}, got: {valid_from_value}"
             
             # Valid Until should not be N/A
             valid_until_row = validity_section.locator("tr:has-text('Valid Until')")
             if valid_until_row.count() > 0:
                 valid_until_value = valid_until_row.locator("td").last.text_content()
                 assert valid_until_value and valid_until_value.strip() != "N/A", f"Valid Until should not be N/A, got: {valid_until_value}"
-                assert ("2026" in valid_until_value or "2025" in valid_until_value), f"Valid Until should contain valid year, got: {valid_until_value}"
+                assert (str(now_year) in valid_until_value or str(now_year + 1) in valid_until_value), f"Valid Until should contain {now_year} or {now_year + 1}, got: {valid_until_value}"
 
     def test_specific_certificate_by_fingerprint(self, page: Page, oidc_provider_url):
         """Test accessing a specific certificate by its fingerprint."""
