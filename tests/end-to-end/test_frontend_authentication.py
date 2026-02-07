@@ -10,17 +10,17 @@ import time
 class TestFrontendAuthentication:
     """Test frontend authentication flow using real browser"""
 
-    def test_unauthenticated_redirect(self, page: Page):
+    def test_unauthenticated_redirect(self, page: Page, oidc_provider_domain):
         """Test that unauthenticated users are redirected to login"""
         # Navigate to frontend root
         page.goto("http://localhost/")
-        
+
         # Should be redirected to OIDC login page
         page.wait_for_load_state("networkidle")
-        
-        # Check that we're at OIDC provider (either hostname format)
+
+        # Check that we're at OIDC provider
         current_url = page.url
-        assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
+        assert oidc_provider_domain in current_url, f"Expected OIDC URL, got: {current_url}"
         
         # Should show the OIDC login page
         expect(page.locator("h1")).to_contain_text("Login - kinda")
@@ -98,30 +98,30 @@ class TestFrontendAuthentication:
         # Should show IT user's display name "Moss"
         expect(page.locator("body")).to_contain_text("Moss")
 
-    def test_logout_flow(self, page: Page):
+    def test_logout_flow(self, page: Page, oidc_provider_domain):
         """Test that logout works properly"""
         # First authenticate
         page.goto("http://localhost/")
         page.wait_for_load_state("networkidle")
-        
+
         if "Login - kinda" in page.content():
             admin_button = page.locator("button:has-text('Login as admin')")
             admin_button.click()
             page.wait_for_load_state("networkidle", timeout=10000)
-        
+
         # Should be authenticated
         current_url = page.url
         assert current_url == "http://localhost/" or current_url == "http://localhost", f"Expected frontend URL, got: {current_url}"
-        
+
         # Look for a logout link/button and click it
         logout_link = page.locator("a:has-text('Logout'), a:has-text('Sign out'), button:has-text('Logout')")
         if logout_link.is_visible():
             logout_link.click()
             page.wait_for_load_state("networkidle")
-            
+
             # Should be redirected back to login
             current_url = page.url
-            assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
+            assert oidc_provider_domain in current_url, f"Expected OIDC URL, got: {current_url}"
 
     def test_session_persistence(self, page: Page):
         """Test that authentication session persists across page reloads"""
@@ -148,18 +148,18 @@ class TestFrontendAuthentication:
         assert current_url == "http://localhost/" or current_url == "http://localhost", f"Expected frontend URL, got: {current_url}"
         expect(page.locator("body")).to_contain_text("TheBOFH")
 
-    def test_protected_routes_require_auth(self, page: Page):
+    def test_protected_routes_require_auth(self, page: Page, oidc_provider_domain):
         """Test that protected routes require authentication"""
         # Try to access a protected route without authentication
         # First clear any existing session by going to logout
         page.goto("http://localhost/auth/logout")
         page.wait_for_load_state("networkidle")
-        
+
         # Now try to access a protected route (like profile config)
         page.goto("http://localhost")
         page.wait_for_load_state("networkidle")
-        
+
         # Should be redirected to OIDC login
         current_url = page.url
-        assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
+        assert oidc_provider_domain in current_url, f"Expected OIDC URL, got: {current_url}"
         expect(page.locator("h1")).to_contain_text("Login - kinda")

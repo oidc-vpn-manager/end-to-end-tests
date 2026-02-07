@@ -9,20 +9,20 @@ import pytest
 from playwright.sync_api import Page, expect
 
 
-def logout_user(page: Page):
+def logout_user(page: Page, oidc_provider_url: str):
     """
     Helper function to properly logout from both tiny-oidc and frontend.
     """
     # First logout from tiny-oidc to prevent auto-login
-    page.goto("http://tinyoidc.authenti-kate.org/user/logout", wait_until="networkidle")
+    page.goto(f"{oidc_provider_url}/user/logout", wait_until="networkidle")
     page.wait_for_timeout(1000)
-    
+
     # Then logout from frontend to close the session
     page.goto("http://localhost/auth/logout", wait_until="networkidle")
     page.wait_for_timeout(1000)
 
 
-def create_certificate_for_user(page: Page, username: str) -> str:
+def create_certificate_for_user(page: Page, username: str, oidc_provider_url: str) -> str:
     """
     Helper function to create a certificate for a user and return the fingerprint.
     """
@@ -69,8 +69,8 @@ def create_certificate_for_user(page: Page, username: str) -> str:
     print(f"DEBUG: Created certificate for user {username} with fingerprint: {certificate_fingerprint}")
     
     # Logout the user properly after creating certificate
-    logout_user(page)
-    
+    logout_user(page, oidc_provider_url)
+
     return certificate_fingerprint
 
 
@@ -182,11 +182,11 @@ class TestCertificateDisplayFixes:
                 assert valid_until_value and valid_until_value.strip() != "N/A", f"Valid Until should not be N/A, got: {valid_until_value}"
                 assert ("2026" in valid_until_value or "2025" in valid_until_value), f"Valid Until should contain valid year, got: {valid_until_value}"
 
-    def test_specific_certificate_by_fingerprint(self, page: Page):
+    def test_specific_certificate_by_fingerprint(self, page: Page, oidc_provider_url):
         """Test accessing a specific certificate by its fingerprint."""
         # Create a certificate for admin user dynamically
         print("DEBUG: Creating certificate for admin user")
-        fingerprint = create_certificate_for_user(page, "admin")
+        fingerprint = create_certificate_for_user(page, "admin", oidc_provider_url)
         
         # Authenticate as admin to access the certificate details
         page.goto("http://localhost/")

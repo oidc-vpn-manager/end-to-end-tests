@@ -82,20 +82,23 @@ class TestSecurityHeadersE2E:
 
         user_page.close()
 
-    def test_security_headers_comprehensive(self, page: Page):
+    def test_security_headers_comprehensive(self, authenticated_page: Callable[[str], Page]):
         """Test comprehensive security headers across different pages."""
+        user_page = authenticated_page("accounts")
 
         test_urls = [
             "http://localhost/",
-            "http://localhost/api/",
+            "http://localhost/profile",
         ]
 
         for url in test_urls:
-            response = page.goto(url)
-            page.wait_for_load_state("networkidle")
+            response = user_page.goto(url)
+            user_page.wait_for_load_state("networkidle")
 
             headers = response.headers
             self._verify_security_headers(headers, url)
+
+        user_page.close()
 
     def _verify_security_headers(self, headers: Dict[str, str], url: str):
         """Helper method to verify security headers."""
@@ -296,7 +299,7 @@ class TestCookieSecurityE2E:
 
         user_page.close()
 
-    def test_cookie_scope_and_domain(self, page: Page):
+    def test_cookie_scope_and_domain(self, page: Page, oidc_provider_domain):
         """Test cookie domain and scope restrictions."""
 
         page.goto("http://localhost/")
@@ -309,7 +312,7 @@ class TestCookieSecurityE2E:
 
             # Cookies should be scoped to localhost, application domain, or OIDC provider domain
             # OIDC provider may set session cookies from external domain
-            acceptable_domains = ['localhost', '.localhost', '', 'tinyoidc.authenti-kate.org']
+            acceptable_domains = ['localhost', '.localhost', '', oidc_provider_domain]
             assert domain in acceptable_domains or domain.startswith('.'), \
                    f"Cookie {cookie['name']} has unexpected domain: {domain}"
 
@@ -392,11 +395,12 @@ class TestHTTPSAndTLSE2E:
         # The application should work regardless of HTTPS configuration
         assert status in [200, 301, 302, 307, 308], f"Unexpected HTTP status: {status}"
 
-    def test_secure_headers_over_http(self, page: Page):
+    def test_secure_headers_over_http(self, authenticated_page: Callable[[str], Page]):
         """Test that security headers are still applied over HTTP (for testing)."""
+        user_page = authenticated_page("accounts")
 
-        response = page.goto("http://localhost/")
-        page.wait_for_load_state("networkidle")
+        response = user_page.goto("http://localhost/")
+        user_page.wait_for_load_state("networkidle")
 
         headers = response.headers
 
@@ -423,6 +427,8 @@ class TestHTTPSAndTLSE2E:
         for header in https_headers:
             if header in headers_lower:
                 print(f"INFO: HTTPS-specific header {header} present over HTTP: {headers[header]}")
+
+        user_page.close()
 
 
 class TestSecurityHeadersBypass:

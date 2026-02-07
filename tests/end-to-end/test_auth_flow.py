@@ -11,16 +11,16 @@ import time
 class TestAuthFlow:
     """Integration test for complete OIDC authentication flow"""
 
-    def test_complete_auth_flow(self, tests_dir, page: Page):
+    def test_complete_auth_flow(self, tests_dir, page: Page, oidc_provider_domain):
         """Test the complete OIDC authentication flow using browser automation"""
-        
+
         print("1. Testing frontend redirect to login...")
         # Access frontend root, should redirect to OIDC login
         page.goto("http://localhost/", wait_until="networkidle")
-        
+
         # Should be redirected to OIDC login page
         current_url = page.url
-        assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
+        assert oidc_provider_domain in current_url, f"Expected OIDC URL, got: {current_url}"
         print(f"✓ Frontend redirected to OIDC: {current_url}")
         
         # Check if this is the authorization endpoint with parameters or the direct login page
@@ -127,7 +127,7 @@ class TestAuthFlow:
         expect(page.locator("body")).to_contain_text("Moss")
         print("✓ IT user authentication successful!")
 
-    def test_logout_flow(self, tests_dir, page: Page):
+    def test_logout_flow(self, tests_dir, page: Page, oidc_provider_domain):
         """Test that logout works properly"""
         
         # First authenticate
@@ -153,7 +153,7 @@ class TestAuthFlow:
             
             # Should be redirected back to login
             current_url = page.url
-            assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL after logout, got: {current_url}"
+            assert oidc_provider_domain in current_url, f"Expected OIDC URL after logout, got: {current_url}"
             print("✓ Logout successful!")
         else:
             print("⚠ No logout button found - this might be expected if frontend doesn't implement logout UI")

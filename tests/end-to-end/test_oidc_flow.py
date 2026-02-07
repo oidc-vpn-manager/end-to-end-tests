@@ -10,18 +10,18 @@ from urllib.parse import urlparse, parse_qs
 class TestOIDCFlow:
     """End-to-end OIDC authentication flow test using browser automation"""
 
-    def test_complete_flow(self, tests_dir, page: Page):
+    def test_complete_flow(self, tests_dir, page: Page, oidc_provider_domain):
         """Test the complete OIDC authentication flow using Playwright"""
-        
+
         print("🚀 Starting end-to-end Playwright authentication test...")
-        
+
         # 1. Access frontend root - should redirect to OIDC login
         print("1. Accessing frontend root...")
         page.goto("http://localhost/", wait_until="networkidle")
-        
-        # Should be redirected to OIDC login page  
+
+        # Should be redirected to OIDC login page
         current_url = page.url
-        assert ("tinyoidc.authenti-kate.org" in current_url or "localhost:8000" in current_url), f"Expected OIDC URL, got: {current_url}"
+        assert oidc_provider_domain in current_url, f"Expected OIDC URL, got: {current_url}"
         print(f"✓ Frontend redirected to OIDC provider: {current_url}")
         
         # 2. Verify nonce and PKCE parameters are present in the authorization URL

@@ -58,6 +58,31 @@ def tools_dir(repository_root):
 
 
 @pytest.fixture(scope="session")
+def oidc_provider_url(tests_dir):
+    """Parse the OIDC provider base URL from .env.frontend"""
+    from urllib.parse import urlparse
+    env_file = tests_dir / ".env.frontend"
+    oidc_discovery_url = ""
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('OIDC_DISCOVERY_URL=') and not line.startswith('#'):
+                oidc_discovery_url = line.split('=', 1)[1].strip("'\"")
+                break
+    if not oidc_discovery_url:
+        return "http://localhost:8000"
+    parsed = urlparse(oidc_discovery_url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+@pytest.fixture(scope="session")
+def oidc_provider_domain(oidc_provider_url):
+    """Extract just the domain (host:port) from the OIDC provider URL"""
+    from urllib.parse import urlparse
+    return urlparse(oidc_provider_url).netloc
+
+
+@pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
     """Configure browser context for tests"""
     return {
@@ -82,16 +107,16 @@ def page(context: BrowserContext) -> Page:
 
 
 @pytest.fixture(autouse=True)
-def clear_session_before_each_test(page: Page):
+def clear_session_before_each_test(page: Page, oidc_provider_url):
     """Clear any existing session before each test"""
     def cleanup_session(phase=""):
         """Clean up sessions with proper error handling and debugging"""
         if phase:
             print(f"Session cleanup {phase}...")
-        
+
         # Step 1: Logout from tiny-oidc first
         try:
-            page.goto("http://localhost:8000/user/logout", timeout=10000)
+            page.goto(f"{oidc_provider_url}/user/logout", timeout=10000)
             page.wait_for_load_state("networkidle", timeout=5000)
             print(f"  ✓ Tiny-oidc logout completed")
         except Exception as e:
@@ -224,7 +249,7 @@ def login_as_user(page: Page, user_type="it"):
 
 
 @pytest.fixture(scope="function")
-def api_client():
+def api_client(oidc_provider_url, oidc_provider_domain):
     """
     API client for direct HTTP requests to services
     """
@@ -233,19 +258,19 @@ def api_client():
             self.base_url = "http://localhost"
             self.session = requests.Session()
             self.session.verify = False  # Ignore SSL for testing
-            
+
         def login(self, username="admin", password=None):
             """Login and get session cookies"""
             try:
                 # Start authentication flow
                 login_url = f"{self.base_url}/"
                 response = self.session.get(login_url, allow_redirects=True, timeout=10)
-                
+
                 # If redirected to tiny-oidc, complete the login
-                if "localhost:8000" in response.url or "tiny-oidc" in response.url:
+                if oidc_provider_domain in response.url or "tiny-oidc" in response.url:
                     # Submit login form to tiny-oidc
                     oidc_response = self.session.post(
-                        f"http://localhost:8000/user/login",
+                        f"{oidc_provider_url}/user/login",
                         data={"username": username},
                         allow_redirects=True,
                         timeout=10
