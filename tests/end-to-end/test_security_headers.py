@@ -312,7 +312,9 @@ class TestCookieSecurityE2E:
 
             # Cookies should be scoped to localhost, application domain, or OIDC provider domain
             # OIDC provider may set session cookies from external domain
-            acceptable_domains = ['localhost', '.localhost', '', oidc_provider_domain]
+            # Cookie domains never include port numbers, so also accept the hostname-only part
+            oidc_host = oidc_provider_domain.split(':')[0] if ':' in oidc_provider_domain else oidc_provider_domain
+            acceptable_domains = ['localhost', '.localhost', '', oidc_provider_domain, oidc_host]
             assert domain in acceptable_domains or domain.startswith('.'), \
                    f"Cookie {cookie['name']} has unexpected domain: {domain}"
 

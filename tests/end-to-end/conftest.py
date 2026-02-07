@@ -60,6 +60,7 @@ def tools_dir(repository_root):
 @pytest.fixture(scope="session")
 def oidc_provider_url(tests_dir):
     """Parse the OIDC provider base URL from .env.frontend"""
+    import re
     from urllib.parse import urlparse
     env_file = tests_dir / ".env.frontend"
     oidc_discovery_url = ""
@@ -69,6 +70,33 @@ def oidc_provider_url(tests_dir):
             if line.startswith('OIDC_DISCOVERY_URL=') and not line.startswith('#'):
                 oidc_discovery_url = line.split('=', 1)[1].strip("'\"")
                 break
+
+    # Resolve ${VAR:-default} shell variable substitution syntax
+    shell_var_match = re.match(r'^\$\{(\w+):-(.+)\}$', oidc_discovery_url)
+    if shell_var_match:
+        var_name = shell_var_match.group(1)
+        default_value = shell_var_match.group(2)
+
+        # Check environment variable first
+        env_value = os.environ.get(var_name)
+        if env_value:
+            oidc_discovery_url = env_value
+        else:
+            # Try to read from .env.tinyoidc (sourced before docker-compose)
+            tinyoidc_env = tests_dir / ".env.tinyoidc"
+            if tinyoidc_env.exists():
+                with open(tinyoidc_env) as f:
+                    for tline in f:
+                        tline = tline.strip()
+                        if tline.startswith(f'export {var_name}=') or tline.startswith(f'{var_name}='):
+                            tline = tline.replace('export ', '', 1)
+                            oidc_discovery_url = tline.split('=', 1)[1].strip("'\"")
+                            break
+
+            # If still unresolved, use the default value from the ${...:-default} syntax
+            if re.match(r'^\$\{', oidc_discovery_url):
+                oidc_discovery_url = default_value
+
     if not oidc_discovery_url:
         return "http://localhost:8000"
     parsed = urlparse(oidc_discovery_url)

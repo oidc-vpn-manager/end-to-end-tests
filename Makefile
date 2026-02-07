@@ -33,14 +33,14 @@ test_setup:
 	@echo "🔍 Installing playwright"
 	@playwright install chromium
 
-start_docker:
+start_docker: set_oidc_url
 	@echo "📦 Building and starting all services with docker-compose..."
-	@cd tests && docker compose up -d --build
+	@bash -c "source tests/.env.tinyoidc 2>/dev/null || true ; cd tests && docker compose up -d --build"
 
-rebuild_docker: ## Clean rebuild all containers (removes volumes)
+rebuild_docker: set_oidc_url ## Clean rebuild all containers (removes volumes)
 	@echo "🔄 Performing clean rebuild of all containers..."
 	@cd tests && docker compose down --volumes
-	@cd tests && docker compose up --build -d
+	@bash -c "source tests/.env.tinyoidc 2>/dev/null || true ; cd tests && docker compose up --build -d"
 	@echo "✅ Clean rebuild complete"
 
 rebuild_docker_images:
@@ -50,7 +50,7 @@ rebuild_docker_images:
 
 push_docker_images: rebuild_docker_images
 	@echo "📦 Tagging and pushing all repos"
-	@bash -x -c '\
+	@bash -c '\
 		set -e -u -E -o pipefail ; \
 		source .fn.semver_bump.sh ; \
 		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
@@ -201,6 +201,18 @@ createmigrations: ## Create database migrations for all services
 	@echo "📋 Creating migration for frontend service"
 	@bash -c 'cd services/frontend && TEMP_DB_FE="$$(mktemp)" && touch "$$TEMP_DB_FE" && export PYTHONPATH=. FERNET_ENCRYPTION_KEY="enc-key" FLASK_SECRET_KEY="secret-key" ENVIRONMENT=development DEV_DATABASE_URI="sqlite:///$$TEMP_DB_FE" && flask --app app.app:create_app db upgrade && flask --app app.app:create_app db migrate -m 'Auto-generated migration' && rm -f "$$TEMP_DB_FE"'
 	@echo "✅ Done creating migrations"
+
+set_oidc_url: ## Set OIDC_DISCOVERY_URL for local tiny-oidc via nip.io
+	@bash -c '\
+		LOCAL_IP=$$(ip route get 1.1.1.1 2>/dev/null | awk "/src/ {for(i=1;i<=NF;i++) if (\$$i==\"src\") print \$$(i+1)}") ; \
+		if [ -z "$$LOCAL_IP" ]; then \
+			echo "❌ Could not detect local IP address from default route" ; \
+			exit 1 ; \
+		fi ; \
+		echo "export OIDC_DISCOVERY_URL=http://tiny-oidc.$${LOCAL_IP}.nip.io:8000/.well-known/openid-configuration" > tests/.env.tinyoidc ; \
+		echo "🔑 Written to tests/.env.tinyoidc:" ; \
+		cat tests/.env.tinyoidc ; \
+	'
 
 cacheclear: ## Clear Python cache files
 	@echo "🧹 Removing Cache Files"
