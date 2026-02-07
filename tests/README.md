@@ -1,6 +1,6 @@
-# OpenVPN Manager Test Suite
+# OIDC VPN Manager Test Suite
 
-This directory contains comprehensive tests for the OpenVPN Manager authentication system.
+This directory contains comprehensive tests for the OIDC VPN Manager authentication system.
 
 ## Test Structure
 

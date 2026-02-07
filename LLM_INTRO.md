@@ -1,4 +1,4 @@
-# OpenVPN Manager
+# OIDC VPN Manager
 
 This file provides guidance to any LLM tooling when working with code in this repository.
 
@@ -6,7 +6,7 @@ This file provides guidance to any LLM tooling when working with code in this re
 
 ## Project Overview
 
-OpenVPN Manager is an enterprise certificate management system with three core microservices:
+OIDC VPN Manager is an enterprise certificate management system with three core microservices:
 - **Frontend Service** (`services/frontend/`) - Web UI and API gateway (ports 8450/8540/8600)
 - **Signing Service** (`services/signing/`) - Certificate signing operations (port 8500) 
 - **Certificate Transparency Service** (`services/certtransparency/`) - Audit logging (port 8800)

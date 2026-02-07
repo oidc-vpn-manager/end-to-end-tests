@@ -1,6 +1,6 @@
-# OpenVPN Manager
+# OIDC VPN Manager
 
-OpenVPN Manager is a comprehensive system for automated certificate management and OpenVPN profile generation. It provides a complete solution for organizations that need to manage OpenVPN access at scale while maintaining security controls and audit trails.
+OIDC VPN Manager is a comprehensive system for automated certificate management and OpenVPN profile generation. It provides a complete solution for organizations that need to manage OpenVPN access at scale while maintaining security controls and audit trails.
 
 ## 🚀 What Problem Does This Solve?
 
@@ -12,7 +12,7 @@ Traditional OpenVPN deployments often suffer from several critical issues:
 - **Security risks** from shared certificates or weak key management
 - **Operational complexity** in managing certificates across multiple users and devices
 
-OpenVPN Manager addresses these challenges by providing:
+OIDC VPN Manager addresses these challenges by providing:
 
 - **Automated certificate lifecycle management** with secure key isolation
 - **Complete audit trail** through Certificate Transparency logging
