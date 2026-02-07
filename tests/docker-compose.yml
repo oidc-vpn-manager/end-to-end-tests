@@ -13,8 +13,6 @@ services:
 
   certtransparency-migrate:
     image: ghcr.io/oidc-vpn-manager/certtransparency:latest
-    build:
-      context: ../services/certtransparency
     env_file:
       - .env.certtransparency
     volumes:
@@ -49,8 +47,6 @@ services:
 
   frontend-migrate:
     image: ghcr.io/oidc-vpn-manager/frontend:latest
-    build:
-      context: ../services/frontend
     env_file:
       - .env.frontend
     volumes:
@@ -99,8 +95,6 @@ services:
 
   frontend-user:
     image: ghcr.io/oidc-vpn-manager/frontend:latest
-    build:
-      context: ../services/frontend
     env_file:
       - .env.frontend
     restart: "no"
@@ -127,8 +121,6 @@ services:
 
   frontend-admin:
     image: ghcr.io/oidc-vpn-manager/frontend:latest
-    build:
-      context: ../services/frontend
     env_file:
       - .env.frontend
     restart: "no"
@@ -155,8 +147,6 @@ services:
 
   signing-init:
     image: ghcr.io/oidc-vpn-manager/signing:latest
-    build:
-      context: ../services/signing
     command: ./import_pki.sh
     user: root
     volumes:
