@@ -56,6 +56,7 @@ push_docker_images: rebuild_docker_images
 		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
 		export datestamp=$$(date +"%Y%m%d") ; \
 		echo "🔍 Processing oidc-vpn-manager images with contexts..." ; \
+		any_bumped=false ; \
 		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
 		for service in $$services ; \
 		do \
@@ -73,6 +74,7 @@ push_docker_images: rebuild_docker_images
 				semver_bump "$$context" ; \
 				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
 				echo "✅ Using new tag: $$semver" ; \
+				any_bumped=true ; \
 			fi ; \
 			popd >/dev/null ; \
 			\
@@ -91,11 +93,50 @@ push_docker_images: rebuild_docker_images
 			docker push "$$image" ; \
 		done ; \
 		echo "" ; \
+		if [ "$$any_bumped" = "true" ]; then \
+			echo "📋 Bumping Helm chart version..." ; \
+			chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
+			current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
+			new_chart_version=$$(generate_next_semver "$$current_chart_version" patch | sed "s/^v//") ; \
+			echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
+			sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
+			sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
+			echo "✅ Updated $$chart_file" ; \
+		else \
+			echo "ℹ️  No services were bumped, skipping Helm chart version bump" ; \
+		fi ; \
+		echo "" ; \
 		echo "✅ Finished processing all images" \
 	'
 	@echo "✅ Pushed"
 
 rebuild_docker_and_push: rebuild_docker push_docker_images
+
+bump_chart: ## Bump the Helm chart version and appVersion (patch)
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
+		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
+		new_chart_version=$$(generate_next_semver "$$current_chart_version" patch | sed "s/^v//") ; \
+		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
+		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
+		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
+		echo "✅ Updated $$chart_file" \
+	'
+
+push_chart: ## Package and push Helm chart to GHCR
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		chart_dir="deploy/with-helm/oidc-vpn-manager" ; \
+		chart_version=$$(sed -n "s/^version: //p" "$$chart_dir/Chart.yaml") ; \
+		echo "📦 Packaging Helm chart v$$chart_version..." ; \
+		helm package "$$chart_dir" ; \
+		echo "📤 Pushing to oci://ghcr.io/oidc-vpn-manager/deploy-with-helm..." ; \
+		helm push "oidc-vpn-manager-$${chart_version}.tgz" oci://ghcr.io/oidc-vpn-manager/deploy-with-helm ; \
+		rm -f "oidc-vpn-manager-$${chart_version}.tgz" ; \
+		echo "✅ Pushed oidc-vpn-manager:$$chart_version" \
+	'
 
 check_services_ready:
 	@echo "⏳ Running pre-flight service readiness tests..."
