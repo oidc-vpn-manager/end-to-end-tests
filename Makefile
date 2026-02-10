@@ -89,6 +89,10 @@ push_docker_images: rebuild_docker_images
 			docker push "$$reponame:$${major}.$${minor}" ; \
 			docker push "$$reponame:$${major}" ; \
 			docker push "$$image" ; \
+			\
+			export component="$$(echo $$reponame | awk -F/ "{print \$$NF}")" ; \
+			echo "📝 Updating Helm values: $$component -> $$semver" ; \
+			sed -i "/repository: $$component$$/{n;s/tag: .*/tag: $$semver/}" deploy/with-helm/oidc-vpn-manager/values.yaml ; \
 		done ; \
 		echo "" ; \
 		echo "✅ Finished processing all images" \
@@ -147,6 +151,9 @@ bump_chart: ## Bump the Helm chart version and appVersion (patch)
 		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
 		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
 		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
+		pushd deploy/with-helm/ ; \
+		git tag -a $$new_chart_version -m "Auto-tagged as part of release process" ; \
+		popd ; \
 		echo "✅ Updated $$chart_file" \
 	'
 
