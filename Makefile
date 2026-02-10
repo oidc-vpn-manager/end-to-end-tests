@@ -56,7 +56,7 @@ push_docker_images: rebuild_docker_images
 		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
 		export datestamp=$$(date +"%Y%m%d") ; \
 		echo "🔍 Processing oidc-vpn-manager images with contexts..." ; \
-		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | select(.value.build.context) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
 		for service in $$services ; \
 		do \
 			export image="$$(echo $$service | cut -d"|" -f1)" ; \
@@ -102,7 +102,7 @@ push_docker_rc: rebuild_docker_images ## Build and push RC-tagged images (no hel
 		set -e -u -E -o pipefail ; \
 		source .fn.semver_bump.sh ; \
 		echo "🔍 Processing oidc-vpn-manager images for RC release..." ; \
-		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | select(.value.build.context) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
 		for service in $$services ; \
 		do \
 			export image="$$(echo $$service | cut -d"|" -f1)" ; \
