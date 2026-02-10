@@ -97,13 +97,53 @@ push_docker_images: rebuild_docker_images
 
 rebuild_docker_and_push: rebuild_docker push_docker_images
 
+push_docker_rc: rebuild_docker_images ## Build and push RC-tagged images (no helm bump)
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		echo "🔍 Processing oidc-vpn-manager images for RC release..." ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		for service in $$services ; \
+		do \
+			export image="$$(echo $$service | cut -d"|" -f1)" ; \
+			export context="$$(echo $$service | cut -d"|" -f2)" ; \
+			export reponame="$$(echo $$image | cut -d: -f1)" ; \
+			echo "" ; \
+			echo "📁 Processing: $$image (context: $$context)" ; \
+			\
+			pushd "$$context" >/dev/null || continue ; \
+			current_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+			if [ -z "$$current_tag" ]; then \
+				current_tag="" ; \
+			fi ; \
+			next_semver=$$(generate_next_semver "$$current_tag" "$${BUMP:-patch}") ; \
+			echo "🔸 Current: $${current_tag:-none} -> Next: $$next_semver" ; \
+			\
+			last_rc=$$(git tag -l "$${next_semver}-rc*" 2>/dev/null | sed "s/.*-rc//" | sort -n | tail -n 1) ; \
+			next_rc=$$(( $${last_rc:-0} + 1 )) ; \
+			rc_tag="$${next_semver}-rc$${next_rc}" ; \
+			echo "🏷️  RC tag: $$rc_tag" ; \
+			\
+			git tag -a "$$rc_tag" -m "Release candidate $$rc_tag" ; \
+			echo "✅ Created git tag: $$rc_tag" ; \
+			popd >/dev/null ; \
+			\
+			echo "🐳 Tagging $$image -> $$reponame:$$rc_tag" ; \
+			docker tag "$$image" "$$reponame:$$rc_tag" ; \
+			echo "📤 Pushing $$reponame:$$rc_tag" ; \
+			docker push "$$reponame:$$rc_tag" ; \
+		done ; \
+		echo "" ; \
+		echo "✅ Finished pushing all RC images" \
+	'
+
 bump_chart: ## Bump the Helm chart version and appVersion (patch)
 	@bash -c '\
 		set -e -u -E -o pipefail ; \
 		source .fn.semver_bump.sh ; \
 		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
 		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
-		new_chart_version=$$(generate_next_semver "$$current_chart_version" patch | sed "s/^v//") ; \
+		new_chart_version=$$(generate_next_semver "$$current_chart_version" "$${BUMP:-patch}" | sed "s/^v//") ; \
 		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
 		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
 		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \

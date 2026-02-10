@@ -61,7 +61,7 @@ semver_bump() {
         fi
         
         # Use semver_bump to get the next version
-        new_tag=$(generate_next_semver "$current_tag" patch)
+        new_tag=$(generate_next_semver "$current_tag" "${BUMP:-patch}")
         echo "🏷️  Creating new tag: $new_tag"
         
         # Create and push the tag

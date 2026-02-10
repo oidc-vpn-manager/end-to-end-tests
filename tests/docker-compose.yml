@@ -21,6 +21,7 @@ services:
     environment:
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
       - INTERMEDIATE_CA_PRIVATE_KEY_FILE=/app/pki/intermediate-ca.key
+      - ENABLE_APPLICATION_TLS=false
     command: ./run_migrate.sh
     depends_on:
       sqlite-volume-permissions:
@@ -41,6 +42,7 @@ services:
     environment:
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
       - INTERMEDIATE_CA_PRIVATE_KEY_FILE=/app/pki/intermediate-ca.key
+      - ENABLE_APPLICATION_TLS=false
     depends_on:
       certtransparency-migrate:
         condition: service_completed_successfully
@@ -62,6 +64,7 @@ services:
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
+      - ENABLE_APPLICATION_TLS=false
     command: ./run_migrate.sh
     depends_on:
       sqlite-volume-permissions:
@@ -89,6 +92,7 @@ services:
       - ROOT_CA_CERTIFICATE_FILE=/app/pki/root-ca.crt
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
+      - ENABLE_APPLICATION_TLS=false
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -115,6 +119,7 @@ services:
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - ADMIN_URL_BASE=http://localhost:8540
       - SITE_NAME=VPN User Service
+      - ENABLE_APPLICATION_TLS=false
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -141,6 +146,7 @@ services:
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - USER_URL_BASE=http://localhost:8450
       - SITE_NAME=VPN Admin Service
+      - ENABLE_APPLICATION_TLS=false
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -171,6 +177,8 @@ services:
       - 8500
     volumes:
       - pki_volume:/pki:ro
+    environment:
+      - ENABLE_APPLICATION_TLS=false
     depends_on:
       signing-init:
         condition: service_completed_successfully
