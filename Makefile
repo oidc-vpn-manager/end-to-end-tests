@@ -158,8 +158,8 @@ push_chart: ## Package and push Helm chart to GHCR
 		echo "📦 Packaging Helm chart v$$chart_version..." ; \
 		helm package "$$chart_dir" ; \
 		echo "📤 Pushing to oci://ghcr.io/oidc-vpn-manager/deploy-with-helm..." ; \
-		gh auth status --json hosts --jq '.hosts."github.com"[0].scopes' | grep -q 'write:packages' || (echo "Adding permission to write packages" ; gh auth refresh -s write:packages) ; \
-		gh auth token | helm registry login ghcr.io -u "$$(gh auth status --jq '.hosts."github.com"[0].login' --json hosts)" --password-stdin ; \
+		if ! gh auth status --json hosts --jq '"'"'.hosts."github.com"[0].scopes'"'"' | grep -q '"'"'write:packages'"'"'; then echo "Adding permission to write packages" ; gh auth refresh -s write:packages ; fi ; \
+		gh auth token | helm registry login ghcr.io -u "$$(gh auth status --jq '"'"'.hosts."github.com"[0].login'"'"' --json hosts)" --password-stdin ; \
 		helm push "oidc-vpn-manager-$${chart_version}.tgz" oci://ghcr.io/oidc-vpn-manager/deploy-with-helm ; \
 		rm -f "oidc-vpn-manager-$${chart_version}.tgz" ; \
 		echo "✅ Pushed oidc-vpn-manager:$$chart_version" \
