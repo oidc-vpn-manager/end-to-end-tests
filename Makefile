@@ -68,12 +68,13 @@ push_docker_images: rebuild_docker_images
 			pushd "$$context" >/dev/null || continue ; \
 			if git tag --points-at HEAD | grep -q . ; then \
 				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
-				echo "✅ Using existing tag: $$semver" ; \
-			else \
-				semver_bump "$$context" ; \
-				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
-				echo "✅ Using new tag: $$semver" ; \
+				echo "⏭️  No changes since $$semver - skipping" ; \
+				popd >/dev/null ; \
+				continue ; \
 			fi ; \
+			semver_bump "$$context" ; \
+			export semver="$$(git tag --points-at HEAD | head -n1)" ; \
+			echo "✅ Using new tag: $$semver" ; \
 			popd >/dev/null ; \
 			\
 			export major="$$(echo $$semver | cut -d. -f1)" ; \
@@ -152,6 +153,8 @@ bump_chart: ## Bump the Helm chart version and appVersion (patch)
 		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
 		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
 		pushd deploy/with-helm/ ; \
+		git add oidc-vpn-manager/Chart.yaml oidc-vpn-manager/values.yaml ; \
+		git commit -m "Bump chart to $$new_chart_version" ; \
 		git tag -a $$new_chart_version -m "Auto-tagged as part of release process" ; \
 		popd ; \
 		echo "✅ Updated $$chart_file" \
@@ -171,6 +174,22 @@ push_chart: ## Package and push Helm chart to GHCR
 		rm -f "oidc-vpn-manager-$${chart_version}.tgz" ; \
 		echo "✅ Pushed oidc-vpn-manager:$$chart_version" \
 	'
+
+release: push_docker_images bump_chart push_chart ## Full release: build, tag, push images + chart, push all git repos
+	@echo "📤 Pushing all git repos..."
+	@git submodule foreach git push
+	@git submodule foreach git push --tags
+	@git push
+	@git push --tags
+	@echo "✅ Release complete"
+
+rc_release: push_docker_rc ## RC release: build and push RC-tagged images, push all git repos
+	@echo "📤 Pushing all git repos..."
+	@git submodule foreach git push
+	@git submodule foreach git push --tags
+	@git push
+	@git push --tags
+	@echo "✅ RC release complete"
 
 check_services_ready:
 	@echo "⏳ Running pre-flight service readiness tests..."
