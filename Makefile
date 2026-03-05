@@ -175,7 +175,47 @@ push_chart: ## Package and push Helm chart to GHCR
 		echo "✅ Pushed oidc-vpn-manager:$$chart_version" \
 	'
 
-release: push_docker_images bump_chart push_chart ## Full release: build, tag, push images + chart, push all git repos
+release_chart: ## Atomic bump + push chart with rollback on failure
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
+		chart_dir="deploy/with-helm/oidc-vpn-manager" ; \
+		\
+		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
+		new_chart_version=$$(generate_next_semver "$$current_chart_version" "$${BUMP:-patch}" | sed "s/^v//") ; \
+		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
+		\
+		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
+		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
+		pushd deploy/with-helm/ ; \
+		git add oidc-vpn-manager/Chart.yaml oidc-vpn-manager/values.yaml ; \
+		git commit -m "Bump chart to $$new_chart_version" ; \
+		git tag -a $$new_chart_version -m "Auto-tagged as part of release process" ; \
+		popd ; \
+		echo "✅ Committed chart $$new_chart_version" ; \
+		\
+		echo "📦 Packaging Helm chart v$$new_chart_version..." ; \
+		helm package "$$chart_dir" ; \
+		echo "📤 Pushing to oci://ghcr.io/oidc-vpn-manager/deploy-with-helm..." ; \
+		if ! gh auth status --json hosts --jq '"'"'.hosts."github.com"[0].scopes'"'"' | grep -q '"'"'write:packages'"'"'; then echo "Adding permission to write packages" ; gh auth refresh -s write:packages ; fi ; \
+		gh auth token | helm registry login ghcr.io -u "$$(gh auth status --jq '"'"'.hosts."github.com"[0].login'"'"' --json hosts)" --password-stdin ; \
+		if helm push "oidc-vpn-manager-$${new_chart_version}.tgz" oci://ghcr.io/oidc-vpn-manager/deploy-with-helm ; then \
+			rm -f "oidc-vpn-manager-$${new_chart_version}.tgz" ; \
+			echo "✅ Pushed oidc-vpn-manager:$$new_chart_version" ; \
+		else \
+			echo "❌ Chart push failed — rolling back version bump" ; \
+			rm -f "oidc-vpn-manager-$${new_chart_version}.tgz" ; \
+			pushd deploy/with-helm/ ; \
+			git tag -d "$$new_chart_version" 2>/dev/null || true ; \
+			git reset --hard HEAD~1 ; \
+			popd ; \
+			echo "🔄 Rolled back to chart version $$current_chart_version" ; \
+			exit 1 ; \
+		fi \
+	'
+
+release: push_docker_images release_chart ## Full release: build, tag, push images + chart, push all git repos
 	@echo "📤 Pushing all git repos..."
 	@git submodule foreach git push
 	@git submodule foreach git push --tags
