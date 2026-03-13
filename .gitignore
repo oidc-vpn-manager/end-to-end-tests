@@ -58,22 +58,6 @@ venv.bak/
 *.swp
 *.swo
 
-# AI Assistants
-.claude/
-CLAUDE.md
-.copilot/
-.github/copilot/
-.ai/
-.cursor/
-.tabnine/
-.codegpt/
-.codeium/
-copilot-*.md
-*.copilot
-.supermaven/
-.gemini/
-GEMINI.md
-
 # Logs
 *.log
 

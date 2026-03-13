@@ -17,12 +17,12 @@
 
 	"mounts": [
 		{
-			"source": "/home/jonspriggs/.ssh",
-			"target": "/home/jonspriggs/.ssh",
+			"source": "/home/jons/.ssh",
+			"target": "/home/jons/.ssh",
 			"type": "bind"
 		},
 		{
-			"source": "/home/jonspriggs/.config/gh",
+			"source": "/home/jons/.config/gh",
 			"target": "/home/vscode/.config/gh",
 			"type": "bind"
 		}
