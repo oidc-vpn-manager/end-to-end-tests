@@ -153,6 +153,54 @@ push_docker_rc: rebuild_docker_images ## Build and push RC-tagged images (no hel
 		echo "✅ Finished pushing all RC images" \
 	'
 
+make_rc_docker_release: rebuild_docker_images ## Build and push RC-tagged images only for services with commits since their last release tag
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		echo "🔍 Processing oidc-vpn-manager images for RC release (changed services only)..." ; \
+		services=$$(docker compose -f tests/docker-compose.yml config --format json | jq -r ".services | to_entries[] | select(.value.image | contains(\"oidc-vpn-manager\")) | select(.value.build.context) | \"\(.value.image)|\(.value.build.context)\"" | sort -u) ; \
+		for service in $$services ; \
+		do \
+			export image="$$(echo $$service | cut -d"|" -f1)" ; \
+			export context="$$(echo $$service | cut -d"|" -f2)" ; \
+			export reponame="$$(echo $$image | cut -d: -f1)" ; \
+			echo "" ; \
+			echo "📁 Checking: $$image (context: $$context)" ; \
+			\
+			pushd "$$context" >/dev/null || continue ; \
+			current_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+			if [ -z "$$current_tag" ]; then \
+				commits_since=$$(git log --oneline 2>/dev/null | wc -l | tr -d " ") ; \
+			else \
+				commits_since=$$(git log "$${current_tag}..HEAD" --oneline 2>/dev/null | wc -l | tr -d " ") ; \
+			fi ; \
+			if [ "$$commits_since" -eq 0 ]; then \
+				echo "⏭️  No commits since $${current_tag} — skipping" ; \
+				popd >/dev/null ; \
+				continue ; \
+			fi ; \
+			echo "🔸 $${commits_since} commit(s) since $${current_tag:-none}" ; \
+			next_semver=$$(generate_next_semver "$${current_tag}" "$${BUMP:-patch}") ; \
+			echo "🔸 Current: $${current_tag:-none} -> Next: $$next_semver" ; \
+			\
+			last_rc=$$(git tag -l "$${next_semver}-rc*" 2>/dev/null | sed "s/.*-rc//" | sort -n | tail -n 1) ; \
+			next_rc=$$(( $${last_rc:-0} + 1 )) ; \
+			rc_tag="$${next_semver}-rc$${next_rc}" ; \
+			echo "🏷️  RC tag: $$rc_tag" ; \
+			\
+			git tag -a "$$rc_tag" -m "Release candidate $$rc_tag" ; \
+			echo "✅ Created git tag: $$rc_tag" ; \
+			popd >/dev/null ; \
+			\
+			echo "🐳 Tagging $$image -> $$reponame:$$rc_tag" ; \
+			docker tag "$$image" "$$reponame:$$rc_tag" ; \
+			echo "📤 Pushing $$reponame:$$rc_tag" ; \
+			docker push "$$reponame:$$rc_tag" ; \
+		done ; \
+		echo "" ; \
+		echo "✅ Finished pushing RC images for changed services" \
+	'
+
 bump_chart: ## Bump the Helm chart version and appVersion (patch)
 	@bash -c '\
 		set -e -u -E -o pipefail ; \
