@@ -30,6 +30,17 @@ reset_tests:
 test_setup:
 	@echo "🔍 Ensuring results directory is created (suite_test_results)"
 	@mkdir -p suite_test_results
+	@echo "🔍 Installing Python dependencies from all requirements.txt files"
+	@failed_installs="" ; \
+	find . -name "requirements*.txt" -not -path "*/\.*" -not -path "*/tiny-oidc/*" | sort | while read f; do \
+		echo "  📦 pip install -r $$f" ; \
+		out=$$(pip install -q -r "$$f" 2>&1) ; rc=$$? ; \
+		if [ $$rc -ne 0 ]; then \
+			failed_pkgs=$$(echo "$$out" | grep "^ERROR: No matching distribution found for" | sed 's/ERROR: No matching distribution found for //') ; \
+			echo "$$out" | grep "^ERROR:" >&2 ; \
+			echo "  ⚠️  Could not install from $$f: $$failed_pkgs" ; \
+		fi ; \
+	done ; true
 	@echo "🔍 Installing playwright"
 	@playwright install chromium
 
