@@ -40,6 +40,13 @@ generate_next_semver() {
 semver_bump() {
     pushd "${1:-/some/path/which/doesnt/exist}" || return 1
 
+    # Abort if there are uncommitted changes — the tag must point to a clean commit
+    if ! git diff --quiet || ! git diff --staged --quiet; then
+        echo "❌ ERROR: Uncommitted changes in $(pwd). Commit everything before releasing."
+        popd || return 1
+        return 1
+    fi
+
     # Get the latest commit hash
     latest_commit=$(git rev-parse HEAD)
     echo "🔸 Latest commit: $latest_commit"
