@@ -250,15 +250,20 @@ class TestWebAuthGetAuthenticated:
         """
         GIVEN a user authenticated via OIDC
         WHEN GET /openvpn-api/profile is requested
-        THEN the openvpn:// URL encodes a /download?token=… URL
+        THEN the openvpn:// URL encodes a /download/<uuid> path-segment URL
         """
         _login(page)
 
         resp = page.request.get(PROFILE_URL, max_redirects=0)
         location = resp.headers.get("location", "")
-        # Format: openvpn://import-profile/https://<host>/download?token=<uuid>
-        assert "/download" in location, f"Expected /download endpoint in URL: {location}"
-        assert "token=" in location, f"Expected token= in URL: {location}"
+        # Format: openvpn://import-profile/https://<host>/download/<uuid>
+        # Path-segment form avoids macOS URL-scheme handler stripping query strings.
+        assert "/download/" in location, f"Expected /download/ endpoint in URL: {location}"
+        # Extract the last path segment and verify it looks like a UUID
+        token_part = location.rstrip("/").split("/download/")[-1]
+        assert len(token_part) == 36 and token_part.count("-") == 4, (
+            f"Token in URL does not look like a UUID: {token_part!r}"
+        )
 
     def test_get_authenticated_openvpn_url_contains_no_pii(self, page: Page):
         """
@@ -272,8 +277,9 @@ class TestWebAuthGetAuthenticated:
         location = resp.headers.get("location", "")
 
         assert "@" not in location, f"Email address leaked into openvpn:// URL: {location}"
-        token_part = location.split("token=")[-1] if "token=" in location else ""
-        if token_part:
+        # Token is in path-segment form: /download/<uuid>
+        if "/download/" in location:
+            token_part = location.rstrip("/").split("/download/")[-1]
             assert len(token_part) == 36 and token_part.count("-") == 4, (
                 f"Token in URL does not look like a UUID: {token_part!r}"
             )

@@ -93,6 +93,7 @@ services:
       - INTERMEDIATE_CA_CERTIFICATE_FILE=/app/pki/intermediate-ca.crt
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - ENABLE_APPLICATION_TLS=false
+      - LOGIN_RATE_LIMIT=60/minute
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -120,6 +121,7 @@ services:
       - ADMIN_URL_BASE=http://localhost:8540
       - SITE_NAME=VPN User Service
       - ENABLE_APPLICATION_TLS=false
+      - LOGIN_RATE_LIMIT=60/minute
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -147,6 +149,7 @@ services:
       - USER_URL_BASE=http://localhost:8450
       - SITE_NAME=VPN Admin Service
       - ENABLE_APPLICATION_TLS=false
+      - LOGIN_RATE_LIMIT=60/minute
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
