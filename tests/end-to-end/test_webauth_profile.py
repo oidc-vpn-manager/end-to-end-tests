@@ -344,11 +344,13 @@ class TestWebAuthFullFlow:
             f"Download failed: {download_resp.status} {download_resp.text()[:200]}"
         )
 
-        # VPN-Session-Token must be in the download response
+        # VPN-Session-Token must be in the download response as 32 hex chars
+        # (dashes stripped to avoid OpenVPN Connect on macOS treating the value
+        # as base64 and rejecting it due to the '-' character).
         session_token = download_resp.headers.get("vpn-session-token", "")
         assert session_token, "Download response must include a non-empty VPN-Session-Token"
-        assert len(session_token) == 36 and session_token.count("-") == 4, (
-            f"VPN-Session-Token should be a UUID, got: {session_token!r}"
+        assert len(session_token) == 32 and all(c in '0123456789abcdefABCDEF' for c in session_token), (
+            f"VPN-Session-Token should be 32 hex chars (UUID without dashes), got: {session_token!r}"
         )
 
     def test_full_flow_session_token_gives_fresh_head_response(self, page: Page):
