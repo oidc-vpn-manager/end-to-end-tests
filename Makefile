@@ -46,17 +46,35 @@ test_setup:
 
 start_docker: set_oidc_url
 	@echo "📦 Building and starting all services with docker-compose..."
-	@bash -c "source tests/.env.tinyoidc 2>/dev/null || true ; cd tests && docker compose up -d --build"
+	@bash -c '\
+		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
+		source tests/.env.tinyoidc 2>/dev/null || true ; \
+		cd tests && \
+		docker compose up -d --build | ts | tee ../suite_test_results/dockerup.log | tee ../suite_test_results/dockerup.$(timestamp).log \
+	'
 
 rebuild_docker: set_oidc_url ## Clean rebuild all containers (removes volumes)
 	@echo "🔄 Performing clean rebuild of all containers..."
-	@cd tests && docker compose down --volumes
-	@bash -c "source tests/.env.tinyoidc 2>/dev/null || true ; cd tests && docker compose up --build -d"
+	@bash -c '\
+		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
+		cd tests && \
+		docker compose down --volumes | ts | tee ../suite_test_results/dockerdown.log | tee ../suite_test_results/dockerdown.$(timestamp).log \
+	'
+	@bash -c '\
+		export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
+		source tests/.env.tinyoidc 2>/dev/null || true ; \
+		cd tests && \
+		docker compose build --no-cache | ts | tee ../suite_test_results/dockerbuild.log | tee ../suite_test_results/dockerbuild.$(timestamp).log && \
+		docker compose up -d --force-recreate | ts | tee ../suite_test_results/dockerup.log | tee ../suite_test_results/dockerup.$(timestamp).log \
+	'
 	@echo "✅ Clean rebuild complete"
 
 rebuild_docker_images:
 	@echo "🔄 Performing rebuild of all images..."
-	@cd tests && docker compose build
+	@bash -c 'export timestamp=$$(date +"%Y%m%d-%H%M%S") ; \
+	cd tests && \
+	docker compose build | ts | tee ../suite_test_results/dockerbuild.log | tee ../suite_test_results/dockerbuild.$(timestamp).log \
+'
 	@echo "✅ Clean rebuild complete"
 
 push_docker_images: rebuild_docker_images
@@ -204,6 +222,61 @@ make_rc_docker_release: rebuild_docker_images ## Build and push RC-tagged images
 		echo "" ; \
 		echo "✅ Finished pushing RC images for changed services" \
 	'
+
+make_rc_chart_release: ## Build and push an RC-tagged Helm chart (no production tag bump)
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
+		chart_dir="deploy/with-helm/oidc-vpn-manager" ; \
+		\
+		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
+		echo "🔸 Current chart version: $$current_chart_version" ; \
+		\
+		if echo "$$current_chart_version" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]*$$"; then \
+			target_semver=$$(echo "$$current_chart_version" | sed "s/-rc[0-9]*$$//") ; \
+			echo "🔸 Detected pre-release chart; using target semver: $$target_semver" ; \
+		else \
+			pushd deploy/with-helm/ >/dev/null ; \
+			last_release_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+			popd >/dev/null ; \
+			echo "🔸 Last chart release tag: $${last_release_tag:-none}" ; \
+			target_semver=$$(generate_next_semver "$${last_release_tag:-0.0.0}" "$${BUMP:-patch}" | sed "s/^v//") ; \
+			echo "🔸 Next semver: $$target_semver" ; \
+		fi ; \
+		\
+		pushd deploy/with-helm/ >/dev/null ; \
+		local_last_rc=$$(git tag -l "$${target_semver}-rc*" 2>/dev/null | sed "s/.*-rc//" | sort -n | tail -n 1) ; \
+		next_rc=$$(( $${local_last_rc:-0} + 1 )) ; \
+		rc_tag="$${target_semver}-rc$${next_rc}" ; \
+		echo "🏷️  Chart RC tag: $$rc_tag (last local: $${local_last_rc:-none})" ; \
+		popd >/dev/null ; \
+		\
+		sed -i "s/^version: .*/version: $$rc_tag/" "$$chart_file" ; \
+		sed -i "s/^appVersion: .*/appVersion: \"$$rc_tag\"/" "$$chart_file" ; \
+		\
+		pushd deploy/with-helm/ >/dev/null ; \
+		git add oidc-vpn-manager/Chart.yaml oidc-vpn-manager/values.yaml ; \
+		git diff --cached --quiet || git commit -m "RC: bump chart to $$rc_tag" ; \
+		git tag -a "$$rc_tag" -m "Release candidate $$rc_tag" 2>/dev/null || echo "⚠️  Git tag $$rc_tag already exists locally" ; \
+		popd >/dev/null ; \
+		\
+		echo "📦 Packaging Helm chart $$rc_tag..." ; \
+		helm package "$$chart_dir" ; \
+		if ! gh auth status --json hosts --jq '"'"'.hosts."github.com"[0].scopes'"'"' | grep -q '"'"'write:packages'"'"'; then echo "Adding permission to write packages" ; gh auth refresh -s write:packages ; fi ; \
+		gh auth token | helm registry login ghcr.io -u "$$(gh auth status --jq '"'"'.hosts."github.com"[0].login'"'"' --json hosts)" --password-stdin ; \
+		helm push "oidc-vpn-manager-$${rc_tag}.tgz" oci://ghcr.io/oidc-vpn-manager/deploy-with-helm ; \
+		rm -f "oidc-vpn-manager-$${rc_tag}.tgz" ; \
+		echo "✅ Pushed chart $$rc_tag" \
+	'
+
+make_rc_release: make_rc_docker_release make_rc_chart_release ## RC release: build and push RC-tagged images and chart, push all git repos
+	@echo "📤 Pushing all git repos..."
+	@git submodule foreach git push
+	@git submodule foreach git push --tags
+	@git push
+	@git push --tags
+	@echo "✅ RC release complete"
 
 bump_chart: ## Bump the Helm chart version and appVersion (patch)
 	@bash -c '\
