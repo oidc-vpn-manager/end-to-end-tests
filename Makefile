@@ -206,7 +206,7 @@ make_rc_docker_release: rebuild_docker_images ## Build and push RC-tagged images
 			svc="$$(echo $$pkg | cut -d/ -f2)" ; \
 			remote_last_rc=$$(gh api --paginate "/orgs/$${org}/packages/container/$${svc}/versions" --jq ".[].metadata.container.tags[] | select(startswith(\"$${next_semver}-rc\"))" 2>/dev/null | sed "s/.*-rc//" | sort -n | tail -n 1) ; \
 			local_last_rc=$$(git tag -l "$${next_semver}-rc*" 2>/dev/null | sed "s/.*-rc//" | sort -n | tail -n 1) ; \
-			last_rc="$$(echo -e "$${remote_last_rc}\n$${local_last_rc}" | grep -v "^$$" | sort -n | tail -n 1)" ; \
+			last_rc="$$(echo -e "$${remote_last_rc}\n$${local_last_rc}" | grep -v "^$$" | sort -n | tail -n 1 || true)" ; \
 			next_rc=$$(( $${last_rc:-0} + 1 )) ; \
 			rc_tag="$${next_semver}-rc$${next_rc}" ; \
 			echo "🏷️  RC tag: $$rc_tag (last remote: $${remote_last_rc:-none}, last local: $${local_last_rc:-none})" ; \
