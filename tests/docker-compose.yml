@@ -94,6 +94,9 @@ services:
       - OPENVPN_TLS_CRYPT_KEY_FILE=/app/pki/tls-crypt.key
       - ENABLE_APPLICATION_TLS=false
       - LOGIN_RATE_LIMIT=60/minute
+      - CALLBACK_RATE_LIMIT=60/minute
+      - DOWNLOAD_RATE_LIMIT=60/minute
+      - BUNDLE_RATE_LIMIT=60/hour
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -122,6 +125,9 @@ services:
       - SITE_NAME=VPN User Service
       - ENABLE_APPLICATION_TLS=false
       - LOGIN_RATE_LIMIT=60/minute
+      - CALLBACK_RATE_LIMIT=60/minute
+      - DOWNLOAD_RATE_LIMIT=60/minute
+      - BUNDLE_RATE_LIMIT=60/hour
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
@@ -150,6 +156,9 @@ services:
       - SITE_NAME=VPN Admin Service
       - ENABLE_APPLICATION_TLS=false
       - LOGIN_RATE_LIMIT=60/minute
+      - CALLBACK_RATE_LIMIT=60/minute
+      - DOWNLOAD_RATE_LIMIT=60/minute
+      - BUNDLE_RATE_LIMIT=60/hour
     depends_on:
       frontend-migrate:
         condition: service_completed_successfully
