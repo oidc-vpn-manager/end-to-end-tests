@@ -12,17 +12,21 @@
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/schlich/devcontainer-features/playwright:0": {},
 		"ghcr.io/christophermacgown/devcontainer-features/direnv:1": {},
-		"ghcr.io/va-h/devcontainers-features/uv:1": {}
+		"ghcr.io/va-h/devcontainers-features/uv:1": {},
+		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+			"version": "none",
+			"minikube": "none"
+		}
 	},
 
 	"mounts": [
 		{
-			"source": "/home/jons/.ssh",
-			"target": "/home/jons/.ssh",
+			"source": "${localEnv:HOME}/.ssh",
+			"target": "/home/vscode/.ssh",
 			"type": "bind"
 		},
 		{
-			"source": "/home/jons/.config/gh",
+			"source": "${localEnv:HOME}/.config/gh",
 			"target": "/home/vscode/.config/gh",
 			"type": "bind"
 		}
@@ -32,7 +36,12 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "npm install -g @anthropic-ai/claude-code && uv tool install claude-monitor && find . -name requirements.txt -exec pip install -r '{}' \\; && sudo apt install moreutils -y"
+	"postCreateCommand": {
+		"setup claude": "curl -fsSL https://claude.ai/install.sh | bash  2>&1 | tee .install_log-claude && claude plugin marketplace add mksglu/context-mode  && claude plugin install context-mode@context-mode",
+		"pip install": "find . -name requirements.txt -exec pip install -r '{}' \\; 2>&1 | tee .install_log-pip",
+		"apt install": "sudo apt install moreutils -y",
+		"direnv allow": "direnv allow ${containerWorkspaceFolder}/.envrc"
+	}
 
 	// Configure tool-specific properties.
 	// "customizations": {},
