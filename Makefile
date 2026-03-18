@@ -283,9 +283,12 @@ bump_chart: ## Bump the Helm chart version and appVersion (patch)
 		set -e -u -E -o pipefail ; \
 		source .fn.semver_bump.sh ; \
 		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
+		pushd deploy/with-helm/ >/dev/null ; \
+		last_release_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+		popd >/dev/null ; \
 		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
-		new_chart_version=$$(generate_next_semver "$$current_chart_version" "$${BUMP:-patch}" | sed "s/^v//") ; \
-		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
+		new_chart_version=$$(generate_next_semver "$${last_release_tag:-0.0.0}" "$${BUMP:-patch}" | sed "s/^v//") ; \
+		echo "🔸 Chart version: $$current_chart_version (last tag: $${last_release_tag:-none}) -> $$new_chart_version" ; \
 		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
 		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
 		pushd deploy/with-helm/ ; \
@@ -318,9 +321,12 @@ release_chart: ## Atomic bump + push chart with rollback on failure
 		chart_file="deploy/with-helm/oidc-vpn-manager/Chart.yaml" ; \
 		chart_dir="deploy/with-helm/oidc-vpn-manager" ; \
 		\
+		pushd deploy/with-helm/ >/dev/null ; \
+		last_release_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+		popd >/dev/null ; \
 		current_chart_version=$$(sed -n "s/^version: //p" "$$chart_file") ; \
-		new_chart_version=$$(generate_next_semver "$$current_chart_version" "$${BUMP:-patch}" | sed "s/^v//") ; \
-		echo "🔸 Chart version: $$current_chart_version -> $$new_chart_version" ; \
+		new_chart_version=$$(generate_next_semver "$${last_release_tag:-0.0.0}" "$${BUMP:-patch}" | sed "s/^v//") ; \
+		echo "🔸 Chart version: $$current_chart_version (last tag: $${last_release_tag:-none}) -> $$new_chart_version" ; \
 		\
 		sed -i "s/^version: .*/version: $$new_chart_version/" "$$chart_file" ; \
 		sed -i "s/^appVersion: .*/appVersion: \"$$new_chart_version\"/" "$$chart_file" ; \
