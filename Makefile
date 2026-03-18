@@ -95,14 +95,14 @@ push_docker_images: rebuild_docker_images
 			echo "📁 Processing: $$image (context: $$context)" ; \
 			\
 			pushd "$$context" >/dev/null || continue ; \
-			if git tag --points-at HEAD | grep -q . ; then \
-				export semver="$$(git tag --points-at HEAD | head -n1)" ; \
+			if git tag --points-at HEAD | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$' ; then \
+				export semver="$$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$' | sort -V | tail -n1)" ; \
 				echo "⏭️  No changes since $$semver - skipping" ; \
 				popd >/dev/null ; \
 				continue ; \
 			fi ; \
 			semver_bump "$$context" ; \
-			export semver="$$(git tag --points-at HEAD | head -n1)" ; \
+			export semver="$$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$' | sort -V | tail -n1)" ; \
 			echo "✅ Using new tag: $$semver" ; \
 			popd >/dev/null ; \
 			\

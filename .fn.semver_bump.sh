@@ -51,15 +51,15 @@ semver_bump() {
     latest_commit=$(git rev-parse HEAD)
     echo "🔸 Latest commit: $latest_commit"
 
-    # Check if this commit is already tagged
-    if git tag --points-at HEAD | grep -q .; then
-        echo "✅ Latest commit is already tagged:"
-        git tag --points-at HEAD
+    # Check if this commit already has a release tag (ignore RC tags)
+    if git tag --points-at HEAD | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+        echo "✅ Latest commit is already release-tagged:"
+        git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'
     else
-        echo "⚠️  Latest commit is not tagged"
-        
-        # Get the current highest tag or default to 1.0.0
-        current_tag=$(git tag -l --no-column 2>/dev/null | sort -V | tail -n 1)
+        echo "⚠️  Latest commit has no release tag"
+
+        # Get the current highest release tag (exclude RC/pre-release tags)
+        current_tag=$(git tag -l --no-column 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
         if [ -z "$current_tag" ]; then
             current_tag=""
             echo "🔸 No existing tags found, starting from v1.0.0"
