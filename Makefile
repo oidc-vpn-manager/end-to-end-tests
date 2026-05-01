@@ -365,6 +365,42 @@ release: push_docker_images release_chart ## Full release: build, tag, push imag
 	@git push --tags
 	@echo "✅ Release complete"
 
+push_repos: ## Push commits and tags in every submodule
+	@echo "📤 Pushing submodule commits and tags..."
+	@git submodule foreach git push
+	@git submodule foreach git push --tags
+	@echo "✅ Submodules pushed"
+
+commit_parent_release: ## Stage submodule pointer changes, commit, semver-bump parent, tag, push
+	@bash -c '\
+		set -e -u -E -o pipefail ; \
+		source .fn.semver_bump.sh ; \
+		git add services tools deploy ; \
+		if git diff --cached --quiet ; then \
+			echo "ℹ️  No parent changes to commit" ; \
+		else \
+			git commit -m "Release: bump submodule pointers" ; \
+			echo "✅ Parent commit created" ; \
+		fi ; \
+		if git tag --points-at HEAD | grep -qE "^v[0-9]+\.[0-9]+\.[0-9]+$$" ; then \
+			echo "ℹ️  Parent HEAD already release-tagged: $$(git tag --points-at HEAD | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$")" ; \
+		else \
+			current_tag=$$(git tag -l --no-column 2>/dev/null | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1) ; \
+			new_tag=$$(generate_next_semver "$${current_tag:-v0.0.0}" "$${BUMP:-patch}") ; \
+			git tag -a "$$new_tag" -m "Auto-tagged as part of release process" ; \
+			echo "✅ Tagged parent $$new_tag" ; \
+		fi ; \
+		git push ; \
+		git push --tags ; \
+		echo "✅ Parent pushed" \
+	'
+
+dependabot: just_test_without_e2e just_test_e2e push_docker_images release_chart push_repos commit_parent_release ## Dependabot release: test, build, tag, push images + chart + all repos
+	@echo "✅ Dependabot release complete"
+
+dependabot_no_tests: push_docker_images release_chart push_repos commit_parent_release ## Dependabot release skipping tests (assumes tests already passed)
+	@echo "✅ Dependabot release (no-tests) complete"
+
 rc_release: push_docker_rc ## RC release: build and push RC-tagged images, push all git repos
 	@echo "📤 Pushing all git repos..."
 	@git submodule foreach git push
@@ -455,7 +491,7 @@ test_pki_tool:
 test_browser:
 	@echo "📋 Running end-to-end tests with Playwright"
 	@rm -f suite_test_results/e2e_tests.log
-	@bash -c "cd tests                     && pytest end-to-end/ -v --browser chromium" 2>&1 | ts | tee suite_test_results/e2e_tests.log | tee suite_test_results/e2e_tests.$(timestamp).log ; \
+	@bash -c "cd tests                     && pytest end-to-end/ -v" 2>&1 | ts | tee suite_test_results/e2e_tests.log | tee suite_test_results/e2e_tests.$(timestamp).log ; \
 	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
 		echo "" ; \
 		echo "❌ END-TO-END TESTS FAILED" ; \
@@ -464,6 +500,19 @@ test_browser:
 		exit 1 ; \
 	fi
 	@echo "✅ End-to-end tests passed"
+
+test_distro_workflows: ## Run distro-container workflow e2e tests (Ubuntu LTS + Alma Linux)
+	@echo "📋 Running distro-container workflow tests"
+	@rm -f suite_test_results/distro_workflows.log
+	@bash -c "cd tests                     && pytest end-to-end/test_distro_container_workflows.py -v" 2>&1 | ts | tee suite_test_results/distro_workflows.log | tee suite_test_results/distro_workflows.$(timestamp).log ; \
+	if [ $${PIPESTATUS[0]} -ne 0 ]; then \
+		echo "" ; \
+		echo "❌ DISTRO WORKFLOW TESTS FAILED" ; \
+		echo "❌ Please check suite_test_results/distro_workflows.$(timestamp).log for details" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+	@echo "✅ Distro workflow tests passed"
 
 get_docker_logs:
 	@echo "🔍 Pulling docker logs, excluding /health lines"

@@ -1,5 +1,9 @@
 # This file is designed to run with just a sqlite database
 # and is purely for "smoke testing"
+networks:
+  default:
+    name: oidc-vpn-manager-tests
+
 volumes:
   pki_volume:
   sqlite:
